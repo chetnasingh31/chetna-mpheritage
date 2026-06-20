@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Navbar({ onSearchClick, onStaffLoginClick, isAdmin, onReplicaClick }) {
+export default function Navbar({ onSearchClick, onStaffLoginClick, isAdmin, onLogout, onReplicaClick }) {
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if (el) {
@@ -97,6 +97,20 @@ export default function Navbar({ onSearchClick, onStaffLoginClick, isAdmin, onRe
         >
           {isAdmin ? 'Admin Desk' : 'Staff Login'}
         </button>
+        {isAdmin && (
+          <button
+            className="btn-login"
+            onClick={onLogout}
+            style={{
+              background: 'rgba(139,26,26,0.1)',
+              color: '#E87070',
+              border: '1px solid rgba(139,26,26,0.3)',
+              marginLeft: '8px'
+            }}
+          >
+            Logout
+          </button>
+        )}
       </div>
     </nav>
   );

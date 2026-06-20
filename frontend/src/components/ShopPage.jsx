@@ -309,12 +309,13 @@ export default function ShopPage({ onBackToPortal }) {
   const [cookieConsent, setCookieConsent] = useState(
     localStorage.getItem('mp_replica_cookies_accepted') !== 'true'
   );
-  
+
   // Cart state
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedSizes, setSelectedSizes] = useState({});
   const [activeDetailProduct, setActiveDetailProduct] = useState(null);
+  const [favorites, setFavorites] = useState({});
 
   // Search & Filter state
   const [filterEra, setFilterEra] = useState('all');
@@ -340,7 +341,7 @@ export default function ShopPage({ onBackToPortal }) {
   const addToCart = (product, size) => {
     const chosenSize = size || product.sizes[0];
     const cartKey = `${product.id}-${chosenSize}`;
-    
+
     setCart(prevCart => {
       const existsIndex = prevCart.findIndex(item => item.cartKey === cartKey);
       if (existsIndex > -1) {
@@ -356,7 +357,7 @@ export default function ShopPage({ onBackToPortal }) {
         }];
       }
     });
-    
+
     // Automatically open cart drawer to give e-commerce feedback
     setIsCartOpen(true);
   };
@@ -402,14 +403,14 @@ export default function ShopPage({ onBackToPortal }) {
 
   const filteredProducts = PRODUCTS.filter(prod => {
     const matchesEra = filterEra === 'all' || prod.era === filterEra;
-    const matchesSearch = prod.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          prod.origin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          prod.desc.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      prod.origin.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      prod.desc.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesEra && matchesSearch;
   });
 
   return (
-    <div 
+    <div
       style={{
         background: '#FAF6F0',
         minHeight: '100vh',
@@ -423,7 +424,7 @@ export default function ShopPage({ onBackToPortal }) {
       }}
     >
       {/* Design-Same Top Header Banner */}
-      <header 
+      <header
         style={{
           background: 'rgba(253, 251, 247, 0.96)',
           backdropFilter: 'blur(10px)',
@@ -439,11 +440,11 @@ export default function ShopPage({ onBackToPortal }) {
           boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
         }}
       >
-        <div 
-          onClick={onBackToPortal} 
+        <div
+          onClick={onBackToPortal}
           style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
         >
-          <div 
+          <div
             style={{
               width: '44px',
               height: '44px',
@@ -483,7 +484,7 @@ export default function ShopPage({ onBackToPortal }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           {/* Cart Icon trigger */}
-          <div 
+          <div
             onClick={() => setIsCartOpen(true)}
             style={{ position: 'relative', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(184, 92, 56, 0.05)', transition: 'background 0.2s' }}
           >
@@ -493,7 +494,7 @@ export default function ShopPage({ onBackToPortal }) {
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
             </svg>
             {cart.length > 0 && (
-              <span 
+              <span
                 style={{
                   position: 'absolute',
                   top: '-4px',
@@ -516,8 +517,8 @@ export default function ShopPage({ onBackToPortal }) {
             )}
           </div>
 
-          <button 
-            onClick={onBackToPortal} 
+          <button
+            onClick={onBackToPortal}
             style={{
               padding: '10px 20px',
               border: '1px solid #B85C38',
@@ -541,8 +542,9 @@ export default function ShopPage({ onBackToPortal }) {
       </header>
 
       {/* Breadcrumb Path */}
-      <div 
+      <div
         style={{
+
           width: '100%',
           margin: '24px auto 0',
           padding: '0 48px',
@@ -554,14 +556,12 @@ export default function ShopPage({ onBackToPortal }) {
         }}
       >
         <span onClick={onBackToPortal} style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#B85C38'} onMouseLeave={(e) => e.currentTarget.style.color = '#8c8070'}>Home</span>
-        <span style={{ margin: '0 10px' }}>/</span>
-        <span>categories</span>
-        <span style={{ margin: '0 10px' }}>/</span>
+        <span style={{ margin: '0 5px' }}>/</span>
         <span style={{ color: '#B85C38', fontWeight: 700 }}>replica</span>
       </div>
 
       {/* Main Banner exactly like live website */}
-      <div 
+      <div
         style={{
           width: '100%',
           margin: '16px auto 32px',
@@ -569,38 +569,135 @@ export default function ShopPage({ onBackToPortal }) {
           boxSizing: 'border-box'
         }}
       >
-        <div 
+        <div
           style={{
-            background: 'linear-gradient(135deg, #231F1D 0%, #151312 100%)',
+            background: '#FDFBF9',
             border: '1px solid rgba(184, 92, 56, 0.2)',
-            borderRadius: '4px',
-            padding: '56px 48px',
+            borderRadius: '8px',
+            padding: '48px 56px',
             position: 'relative',
             overflow: 'hidden',
-            boxShadow: '0 16px 36px rgba(0,0,0,0.08)'
+            boxShadow: '0 16px 36px rgba(184, 92, 56, 0.04)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '32px'
           }}
         >
-          {/* Elegant geometric pattern */}
-          <div 
+          {/* Flipped Background Image */}
+          <img
+            src="https://images.pexels.com/photos/19455909/pexels-photo-19455909.jpeg?auto=compress&cs=tinysrgb&w=1200"
+            alt="Museum Hallway Replicas"
             style={{
               position: 'absolute',
               inset: 0,
-              opacity: 0.04,
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M20 0 L40 20 L20 40 L0 20 Z' fill='none' stroke='%23ffffff' stroke-width='1.2'/%3E%3C/svg%3E")`
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center 40%',
+              transform: 'scaleX(-1)',
+              pointerEvents: 'none',
+              zIndex: 1
             }}
           />
-          <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: '40px', color: '#FAF6F0', margin: '0 0 10px 0', letterSpacing: '2.5px', textTransform: 'uppercase', fontWeight: 600 }}>
-            Replica
-          </h2>
-          <p style={{ fontSize: '13px', color: 'rgba(250, 246, 240, 0.7)', margin: 0, letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 500 }}>
-            Showing 20 museum authenticated replica products
-          </p>
+
+          {/* Fade Overlay for legibility */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(135deg, rgba(254, 252, 249, 0.82) 0%, rgba(246, 240, 230, 0.72) 100%)',
+              zIndex: 1,
+              pointerEvents: 'none'
+            }}
+          />
+          {/* Inner decorative border framing */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: '12px',
+              border: '1px solid rgba(184, 92, 56, 0.12)',
+              pointerEvents: 'none',
+              borderRadius: '6px'
+            }}
+          />
+
+          {/* Subtle brand watermark */}
+          <div
+            style={{
+              position: 'absolute',
+              left: '30%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              fontFamily: "'Cinzel', serif",
+              fontSize: '280px',
+              fontWeight: 700,
+              color: '#B85C38',
+              opacity: 0.02,
+              pointerEvents: 'none',
+              userSelect: 'none',
+              lineHeight: 1
+            }}
+          >
+            व
+          </div>
+
+          {/* Left Text Block */}
+          <div style={{ position: 'relative', zIndex: 2, flex: '2 1 400px', maxWidth: '580px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '10px', color: '#B85C38' }}>✦</span>
+              <span style={{ fontSize: '10px', color: '#B85C38', letterSpacing: '3px', textTransform: 'uppercase', fontWeight: 700 }}>
+                Authentic Replicas
+              </span>
+              <span style={{ height: '1px', flexGrow: 1, maxMidth: '100px', background: 'linear-gradient(90deg, rgba(184, 92, 56, 0.25), transparent)' }}></span>
+            </div>
+            <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: '40px', color: '#2E2A27', margin: '0 0 16px 0', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600, lineHeight: 1.2 }}>
+              Preserving <span style={{ color: '#B85C38', borderBottom: '2px solid rgba(184, 92, 56, 0.25)', paddingBottom: '2px' }}>Madhya Pradesh</span>'s Sacred Art
+            </h2>
+            <p style={{ fontSize: '13px', color: '#635b51', margin: 0, lineHeight: 1.7, fontWeight: 500, letterSpacing: '0.2px' }}>
+              Explore museum-certified, research-grade replica sculptures crafted by state-empanelled master artisans. Each masterpiece is accompanied by a certified document of historical replication.
+            </p>
+          </div>
+
+          {/* Right Stats Block - Styled Directly on Background */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 2,
+              flex: '1 1 200px',
+              maxWidth: '260px',
+              minWidth: '160px',
+              textAlign: 'right',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '38px', color: '#B85C38', fontFamily: "'Cinzel', serif", fontWeight: 700, lineHeight: 1, letterSpacing: '1px' }}>20</div>
+              <div style={{ fontSize: '9px', color: '#8c8070', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700, marginTop: '4px' }}>
+                Certified Replicas
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
+              <span style={{ height: '1px', width: '32px', background: 'linear-gradient(90deg, transparent, rgba(184, 92, 56, 0.25))' }}></span>
+              <span style={{ fontSize: '8px', color: '#C9A84C' }}>✦</span>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '13px', color: '#2E2A27', fontFamily: "'Cinzel', serif", fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', lineHeight: 1.2 }}>100% Handmade</div>
+              <div style={{ fontSize: '10px', color: '#8c8070', marginTop: '3px', fontWeight: 500 }}>By Empanelled Artisans</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Filters and Search toolbar */}
-      <div 
+      <div
         style={{
+
           width: '100%',
           margin: '0 auto 24px',
           padding: '0 48px',
@@ -615,8 +712,8 @@ export default function ShopPage({ onBackToPortal }) {
         {/* Era Dropdown filter */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <label style={{ fontSize: '12px', fontFamily: "'Cinzel', serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#2E2A27' }}>Period / Era:</label>
-          <select 
-            value={filterEra} 
+          <select
+            value={filterEra}
             onChange={(e) => setFilterEra(e.target.value)}
             style={{
               padding: '8px 16px',
@@ -639,8 +736,8 @@ export default function ShopPage({ onBackToPortal }) {
 
         {/* Text Search input */}
         <div style={{ position: 'relative', width: '320px' }}>
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Search replicas (e.g. Varaha, Shiva)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -655,12 +752,12 @@ export default function ShopPage({ onBackToPortal }) {
               boxSizing: 'border-box'
             }}
           />
-          <svg 
-            width="14" 
-            height="14" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="rgba(184, 92, 56, 0.6)" 
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="rgba(184, 92, 56, 0.6)"
             strokeWidth="2.5"
             style={{ position: 'absolute', left: '12px', top: '11px' }}
           >
@@ -671,8 +768,9 @@ export default function ShopPage({ onBackToPortal }) {
       </div>
 
       {/* Main product catalog grid */}
-      <main 
+      <main
         style={{
+
           width: '100%',
           margin: '0 auto 64px',
           padding: '0 48px',
@@ -687,220 +785,237 @@ export default function ShopPage({ onBackToPortal }) {
             <p style={{ fontSize: '13px', color: '#8c8070', margin: 0 }}>Try clearing your search query or choosing another period.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '32px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '30px' }}>
             {filteredProducts.map((prod) => {
               const sizeSelected = selectedSizes[prod.id] || prod.sizes[0];
+              const isFav = !!favorites[prod.id];
               return (
-                <div 
+                <div
                   key={prod.id}
                   style={{
                     background: '#FFFFFF',
-                    border: '1px solid rgba(184, 92, 56, 0.14)',
+                    border: '1px solid rgba(184, 92, 56, 0.12)',
                     borderRadius: '4px',
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
-                    boxShadow: '0 12px 32px rgba(17, 17, 17, 0.03)',
+                    boxShadow: '0 8px 24px rgba(17, 17, 17, 0.02)',
                     transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                     position: 'relative'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-6px)';
-                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(184, 92, 56, 0.08)';
-                    e.currentTarget.style.borderColor = 'rgba(184, 92, 56, 0.3)';
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 12px 30px rgba(184, 92, 56, 0.06)';
+                    e.currentTarget.style.borderColor = 'rgba(184, 92, 56, 0.25)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.boxShadow = '0 12px 32px rgba(17, 17, 17, 0.03)';
-                    e.currentTarget.style.borderColor = 'rgba(184, 92, 56, 0.14)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(17, 17, 17, 0.02)';
+                    e.currentTarget.style.borderColor = 'rgba(184, 92, 56, 0.12)';
                   }}
                 >
-                  {/* Aspect Ratio Square Image container */}
-                  <div 
-                    onClick={() => setActiveDetailProduct(prod)}
+                  {/* Portrait aspect ratio image container */}
+                  <div
                     style={{
-                      height: '270px',
+                      height: '350px',
                       position: 'relative',
                       overflow: 'hidden',
-                      background: '#F0EBE3',
-                      borderBottom: '1px solid rgba(184, 92, 56, 0.08)',
+                      background: '#F5F2EC',
                       cursor: 'pointer'
                     }}
                   >
-                    <img 
-                      src={prod.img} 
-                      alt={prod.name} 
-                      style={{ 
-                        width: '100%', 
-                        height: '100%', 
+                    <img
+                      src={prod.img}
+                      alt={prod.name}
+                      onClick={() => setActiveDetailProduct(prod)}
+                      style={{
+                        width: '100%',
+                        height: '100%',
                         objectFit: 'cover',
                         transition: 'transform 0.4s ease'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
                       onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
                     />
-                    <div 
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.15) 0%, transparent 100%)',
-                        pointerEvents: 'none'
-                      }}
-                    />
-                    {prod.era && (
-                      <span 
+
+                    {/* Top right floating actions */}
+                    <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10 }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(`${window.location.origin}/products/${prod.id}`);
+                          alert(`Product Link Copied: ${prod.name}`);
+                        }}
                         style={{
-                          position: 'absolute',
-                          top: '16px',
-                          left: '16px',
-                          background: 'rgba(35, 31, 29, 0.95)',
-                          color: '#FAF6F0',
-                          fontSize: '9px',
-                          fontWeight: 700,
-                          padding: '5px 10px',
-                          borderRadius: '1px',
-                          letterSpacing: '1px',
-                          textTransform: 'uppercase',
-                          border: '1px solid rgba(184, 92, 56, 0.4)',
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          background: '#ffffff',
+                          border: 'none',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          color: '#2E2A27',
+                          transition: 'transform 0.2s'
                         }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.08)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
                       >
-                        {prod.era}
-                      </span>
-                    )}
-                  </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="18" cy="5" r="3" />
+                          <circle cx="6" cy="12" r="3" />
+                          <circle cx="18" cy="19" r="3" />
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                        </svg>
+                      </button>
 
-                  {/* Card Body */}
-                  <div style={{ padding: '24px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      {/* Authority Tag */}
-                      <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#8c8070', fontWeight: 600, marginBottom: '8px' }}>
-                        {prod.authority.split(' ').slice(0, 3).join(' ')} M.P.
-                      </div>
-                      
-                      <h3 
-                        onClick={() => setActiveDetailProduct(prod)}
-                        style={{ 
-                          fontFamily: "'Cinzel', serif", 
-                          fontSize: '16px', 
-                          color: '#2E2A27', 
-                          margin: '0 0 10px 0', 
-                          lineHeight: 1.4, 
-                          fontWeight: 700,
-                          cursor: 'pointer'
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFavorites(prev => ({ ...prev, [prod.id]: !prev[prod.id] }));
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = '#B85C38'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = '#2E2A27'}
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          background: '#ffffff',
+                          border: 'none',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          color: isFav ? '#cc3333' : '#2E2A27',
+                          transition: 'transform 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.08)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
                       >
-                        {prod.name}
-                      </h3>
-                      
-                      <p style={{ fontSize: '12px', color: '#6e6558', lineHeight: 1.6, margin: '0 0 20px 0', minHeight: '54px' }}>
-                        {prod.desc}
-                      </p>
-
-                      {/* Sizes display */}
-                      <div style={{ marginBottom: '20px' }}>
-                        <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#8c8070', fontWeight: 700 }}>
-                          Available Dimensions:
-                        </span>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                          {prod.sizes.map((sz) => (
-                            <button
-                              key={sz}
-                              type="button"
-                              onClick={() => setSelectedSizes(prev => ({ ...prev, [prod.id]: sz }))}
-                              style={{
-                                padding: '5px 12px',
-                                border: sizeSelected === sz ? '1px solid #B85C38' : '1px solid rgba(46, 42, 39, 0.15)',
-                                background: sizeSelected === sz ? '#B85C38' : '#ffffff',
-                                color: sizeSelected === sz ? '#ffffff' : '#2E2A27',
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                borderRadius: '1px',
-                                transition: 'all 0.15s',
-                                fontFamily: "'Cinzel', serif"
-                              }}
-                            >
-                              {sz}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill={isFav ? '#cc3333' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                        </svg>
+                      </button>
                     </div>
 
-                    <div>
-                      {/* Price tag */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(184, 92, 56, 0.08)', paddingTop: '16px', marginBottom: '16px' }}>
-                        <span style={{ fontSize: '11px', color: '#8c8070', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Price (Inc. Tax)</span>
-                        <div>
-                          {prod.comparePrice && (
-                            <span style={{ textDecoration: 'line-through', color: '#8c8070', fontSize: '12px', marginRight: '8px' }}>
-                              ₹{prod.comparePrice.toLocaleString()}
-                            </span>
-                          )}
-                          <span style={{ fontSize: '20px', fontWeight: 700, color: '#B85C38', fontFamily: "'Cinzel', serif" }}>
-                            ₹{prod.price.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
+                    {/* Centered QUICK ADD button overlaying bottom of image */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(prod, sizeSelected);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        bottom: '16px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: '#ffffff',
+                        border: '1px solid rgba(46, 42, 39, 0.12)',
+                        borderRadius: '6px',
+                        padding: '10px 24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: "'Inter', sans-serif",
+                        fontWeight: 600,
+                        fontSize: '11px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        color: '#2E2A27',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                        transition: 'all 0.2s',
+                        zIndex: 10,
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#FAF6F0';
+                        e.currentTarget.style.transform = 'translateX(-50%) scale(1.02)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#ffffff';
+                        e.currentTarget.style.transform = 'translateX(-50%) scale(1.0)';
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                        <circle cx="9" cy="21" r="1" />
+                        <circle cx="20" cy="21" r="1" />
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                      </svg>
+                      QUICK ADD
+                    </button>
+                  </div>
 
-                      {/* Buy Action Buttons */}
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button 
-                          onClick={() => setActiveDetailProduct(prod)}
-                          style={{
-                            flex: '1',
-                            padding: '10px',
-                            background: 'transparent',
-                            color: '#2E2A27',
-                            border: '1px solid rgba(46, 42, 39, 0.3)',
-                            borderRadius: '1px',
-                            fontFamily: "'Cinzel', serif",
-                            fontWeight: 700,
-                            fontSize: '11px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.8px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(46,42,39,0.04)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          Specs
-                        </button>
-                        
-                        <button 
-                          onClick={() => addToCart(prod, sizeSelected)}
-                          style={{
-                            flex: '2',
-                            padding: '10px',
-                            background: 'linear-gradient(135deg, #B85C38, #9c4c2d)',
-                            color: '#ffffff',
-                            border: 'none',
-                            borderRadius: '1px',
-                            fontFamily: "'Cinzel', serif",
-                            fontWeight: 700,
-                            fontSize: '11px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '1px',
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(184,92,56,0.15)',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(184,92,56,0.25)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'none';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(184,92,56,0.15)';
-                          }}
-                        >
-                          Quick Add
-                        </button>
-                      </div>
+                  {/* Minimal Details Block */}
+                  <div style={{ padding: '16px 16px 20px', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* Title with single line truncation */}
+                    <h3
+                      onClick={() => setActiveDetailProduct(prod)}
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        color: '#2E2A27',
+                        margin: 0,
+                        lineHeight: 1.3,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden'
+                      }}
+                      title={prod.title}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#B85C38'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#2E2A27'}
+                    >
+                      {prod.title}
+                    </h3>
+
+                    {/* Era/Period Subtitle */}
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#B85C38' }}>
+                      {prod.era}
+                    </div>
+
+                    {/* Size pills */}
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '4px 0' }}>
+                      {prod.sizes.map((sz) => {
+                        const isSelected = sizeSelected === sz;
+                        return (
+                          <button
+                            key={sz}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSizes(prev => ({ ...prev, [prod.id]: sz }));
+                            }}
+                            style={{
+                              padding: '4px 12px',
+                              border: isSelected ? '1.5px solid #B85C38' : '1.5px solid #E5E1DA',
+                              background: isSelected ? '#FAF6F0' : '#ffffff',
+                              color: isSelected ? '#B85C38' : '#6E6558',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              borderRadius: '20px',
+                              transition: 'all 0.15s',
+                              fontFamily: "'Inter', sans-serif"
+                            }}
+                          >
+                            {sz}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Price tag */}
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#2E2A27', fontFamily: "'Inter', sans-serif" }}>
+                      ₹{prod.price.toLocaleString()}
+                    </div>
+
+                    {/* Authority information */}
+                    <div style={{ fontSize: '11px', color: '#8c8070', lineHeight: 1.4, marginTop: '2px' }}>
+                      {prod.authority}
                     </div>
                   </div>
                 </div>
@@ -911,7 +1026,7 @@ export default function ShopPage({ onBackToPortal }) {
       </main>
 
       {/* Trust Badges - Match Live Theme */}
-      <section 
+      <section
         style={{
           borderTop: '1px solid rgba(184, 92, 56, 0.15)',
           borderBottom: '1px solid rgba(184, 92, 56, 0.15)',
@@ -919,7 +1034,7 @@ export default function ShopPage({ onBackToPortal }) {
           padding: '48px 0'
         }}
       >
-        <div style={{ width: '100%', margin: '0 auto', padding: '0 48px', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '32px' }}>
+        <div style={{ margin: '0 auto', padding: '0 48px', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '32px' }}>
           <div style={{ textAlign: 'center', flex: '1 1 240px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <span style={{ fontSize: '24px', display: 'block', marginBottom: '12px' }}>🇮🇳</span>
             <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontFamily: "'Cinzel', serif", color: '#B85C38', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>Proudly Indian</h4>
@@ -928,18 +1043,18 @@ export default function ShopPage({ onBackToPortal }) {
           <div style={{ textAlign: 'center', flex: '1 1 240px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <span style={{ fontSize: '24px', display: 'block', marginBottom: '12px' }}>✦</span>
             <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontFamily: "'Cinzel', serif", color: '#B85C38', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>Impeccable details</h4>
-            <span style={{ fontSize: '12px', color: '#6e6558', lineHeight: 1.4 }}>Hand Finished <br/>Research Grade Details</span>
+            <span style={{ fontSize: '12px', color: '#6e6558', lineHeight: 1.4 }}>Hand Finished <br />Research Grade Details</span>
           </div>
           <div style={{ textAlign: 'center', flex: '1 1 240px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <span style={{ fontSize: '24px', display: 'block', marginBottom: '12px' }}>🏛️</span>
             <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontFamily: "'Cinzel', serif", color: '#B85C38', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>Authentic Products</h4>
-            <span style={{ fontSize: '12px', color: '#6e6558', lineHeight: 1.4 }}>Museum Certified <br/>Limited Edition Replicas</span>
+            <span style={{ fontSize: '12px', color: '#6e6558', lineHeight: 1.4 }}>Museum Certified <br />Limited Edition Replicas</span>
           </div>
         </div>
       </section>
 
       {/* Dark Footer Block */}
-      <footer 
+      <footer
         style={{
           background: '#0D0C0B',
           color: '#FAF6F0',
@@ -947,7 +1062,7 @@ export default function ShopPage({ onBackToPortal }) {
           fontSize: '13px'
         }}
       >
-        <div style={{ width: '100%', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px', borderBottom: '1px solid rgba(250,246,240,0.06)', paddingBottom: '56px', marginBottom: '36px' }}>
+        <div style={{ margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px', borderBottom: '1px solid rgba(250,246,240,0.06)', paddingBottom: '56px', marginBottom: '36px' }}>
           <div>
             <h4 style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', letterSpacing: '1px', marginBottom: '20px', color: '#FAF6F0', fontWeight: 700 }}>CATEGORIES</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -984,7 +1099,7 @@ export default function ShopPage({ onBackToPortal }) {
           </div>
         </div>
 
-        <div style={{ width: '100%', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <p style={{ margin: 0, opacity: 0.5, fontSize: '11px' }}>
             Copyright © 2026 Varaha Heritage. All rights reserved.
           </p>
@@ -996,7 +1111,7 @@ export default function ShopPage({ onBackToPortal }) {
 
       {/* Cart Side Drawer Component */}
       {isCartOpen && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             inset: 0,
@@ -1008,7 +1123,7 @@ export default function ShopPage({ onBackToPortal }) {
           }}
           onClick={() => setIsCartOpen(false)}
         >
-          <div 
+          <div
             style={{
               width: '100%',
               maxWidth: '440px',
@@ -1028,7 +1143,7 @@ export default function ShopPage({ onBackToPortal }) {
                 <span style={{ fontSize: '20px' }}>🛍️</span>
                 <h3 style={{ fontFamily: "'Cinzel', serif", margin: 0, fontSize: '18px', fontWeight: 700 }}>Your Basket</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setIsCartOpen(false)}
                 style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#2E2A27' }}
               >
@@ -1046,9 +1161,9 @@ export default function ShopPage({ onBackToPortal }) {
               ) : (
                 cart.map(item => (
                   <div key={item.cartKey} style={{ display: 'flex', gap: '16px', borderBottom: '1px solid rgba(184,92,56,0.06)', paddingBottom: '16px' }}>
-                    <img 
-                      src={item.product.img} 
-                      alt={item.product.name} 
+                    <img
+                      src={item.product.img}
+                      alt={item.product.name}
                       style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '1px', border: '1px solid rgba(184,92,56,0.1)' }}
                     />
                     <div style={{ flexGrow: 1 }}>
@@ -1066,8 +1181,8 @@ export default function ShopPage({ onBackToPortal }) {
                         </div>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => removeFromCart(item.cartKey)} 
+                    <button
+                      onClick={() => removeFromCart(item.cartKey)}
                       style={{ background: 'none', border: 'none', color: '#cc3333', fontSize: '16px', cursor: 'pointer', alignSelf: 'flex-start' }}
                     >
                       🗑️
@@ -1086,7 +1201,7 @@ export default function ShopPage({ onBackToPortal }) {
                     ₹{getCartTotal().toLocaleString()}
                   </span>
                 </div>
-                <button 
+                <button
                   onClick={() => setIsCheckoutOpen(true)}
                   style={{
                     width: '100%',
@@ -1114,7 +1229,7 @@ export default function ShopPage({ onBackToPortal }) {
 
       {/* Product Spec Detail Overlay Modal */}
       {activeDetailProduct && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             inset: 0,
@@ -1129,7 +1244,7 @@ export default function ShopPage({ onBackToPortal }) {
           }}
           onClick={() => setActiveDetailProduct(null)}
         >
-          <div 
+          <div
             style={{
               width: '100%',
               maxWidth: '800px',
@@ -1146,7 +1261,7 @@ export default function ShopPage({ onBackToPortal }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
-            <button 
+            <button
               onClick={() => setActiveDetailProduct(null)}
               style={{
                 position: 'absolute',
@@ -1169,9 +1284,9 @@ export default function ShopPage({ onBackToPortal }) {
 
             {/* Left Side: Product Image */}
             <div style={{ flex: '1', background: '#F0EBE3', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
-              <img 
-                src={activeDetailProduct.img} 
-                alt={activeDetailProduct.name} 
+              <img
+                src={activeDetailProduct.img}
+                alt={activeDetailProduct.name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             </div>
@@ -1179,7 +1294,7 @@ export default function ShopPage({ onBackToPortal }) {
             {/* Right Side: Product Metadata Specifications */}
             <div style={{ flex: '1.2', padding: '36px', overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
               <div>
-                <span 
+                <span
                   style={{
                     background: 'rgba(184, 92, 56, 0.1)',
                     color: '#B85C38',
@@ -1232,7 +1347,7 @@ export default function ShopPage({ onBackToPortal }) {
                   </span>
                 </div>
 
-                <button 
+                <button
                   onClick={() => {
                     addToCart(activeDetailProduct, selectedSizes[activeDetailProduct.id]);
                     setActiveDetailProduct(null);
@@ -1263,7 +1378,7 @@ export default function ShopPage({ onBackToPortal }) {
 
       {/* Checkout Modal Form */}
       {isCheckoutOpen && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             inset: 0,
@@ -1275,7 +1390,7 @@ export default function ShopPage({ onBackToPortal }) {
             padding: '20px'
           }}
         >
-          <div 
+          <div
             style={{
               width: '100%',
               maxWidth: '500px',
@@ -1287,7 +1402,7 @@ export default function ShopPage({ onBackToPortal }) {
               boxSizing: 'border-box'
             }}
           >
-            <button 
+            <button
               onClick={() => setIsCheckoutOpen(false)}
               style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#2E2A27' }}
             >
@@ -1306,10 +1421,10 @@ export default function ShopPage({ onBackToPortal }) {
               <form onSubmit={handleCheckoutSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8c8070', fontWeight: 700, marginBottom: '6px' }}>Full Name *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={checkoutForm.name} 
+                  <input
+                    type="text"
+                    required
+                    value={checkoutForm.name}
                     onChange={e => setCheckoutForm(prev => ({ ...prev, name: e.target.value }))}
                     style={{ width: '100%', padding: '9px 12px', border: '1px solid rgba(184,92,56,0.2)', borderRadius: '2px', background: '#FFFFFF', boxSizing: 'border-box' }}
                   />
@@ -1317,19 +1432,19 @@ export default function ShopPage({ onBackToPortal }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8c8070', fontWeight: 700, marginBottom: '6px' }}>Email Address *</label>
-                    <input 
-                      type="email" 
-                      required 
-                      value={checkoutForm.email} 
+                    <input
+                      type="email"
+                      required
+                      value={checkoutForm.email}
                       onChange={e => setCheckoutForm(prev => ({ ...prev, email: e.target.value }))}
                       style={{ width: '100%', padding: '9px 12px', border: '1px solid rgba(184,92,56,0.2)', borderRadius: '2px', background: '#FFFFFF', boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8c8070', fontWeight: 700, marginBottom: '6px' }}>Phone Number</label>
-                    <input 
-                      type="tel" 
-                      value={checkoutForm.phone} 
+                    <input
+                      type="tel"
+                      value={checkoutForm.phone}
                       onChange={e => setCheckoutForm(prev => ({ ...prev, phone: e.target.value }))}
                       style={{ width: '100%', padding: '9px 12px', border: '1px solid rgba(184,92,56,0.2)', borderRadius: '2px', background: '#FFFFFF', boxSizing: 'border-box' }}
                     />
@@ -1337,10 +1452,10 @@ export default function ShopPage({ onBackToPortal }) {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8c8070', fontWeight: 700, marginBottom: '6px' }}>Delivery Address *</label>
-                  <textarea 
-                    required 
-                    rows="3" 
-                    value={checkoutForm.address} 
+                  <textarea
+                    required
+                    rows="3"
+                    value={checkoutForm.address}
                     onChange={e => setCheckoutForm(prev => ({ ...prev, address: e.target.value }))}
                     style={{ width: '100%', padding: '9px 12px', border: '1px solid rgba(184,92,56,0.2)', borderRadius: '2px', background: '#FFFFFF', fontFamily: 'inherit', boxSizing: 'border-box' }}
                   />
@@ -1348,28 +1463,28 @@ export default function ShopPage({ onBackToPortal }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '14px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8c8070', fontWeight: 700, marginBottom: '6px' }}>City *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={checkoutForm.city} 
+                    <input
+                      type="text"
+                      required
+                      value={checkoutForm.city}
                       onChange={e => setCheckoutForm(prev => ({ ...prev, city: e.target.value }))}
                       style={{ width: '100%', padding: '9px 12px', border: '1px solid rgba(184,92,56,0.2)', borderRadius: '2px', background: '#FFFFFF', boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8c8070', fontWeight: 700, marginBottom: '6px' }}>Zip/Postal Code *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={checkoutForm.zip} 
+                    <input
+                      type="text"
+                      required
+                      value={checkoutForm.zip}
                       onChange={e => setCheckoutForm(prev => ({ ...prev, zip: e.target.value }))}
                       style={{ width: '100%', padding: '9px 12px', border: '1px solid rgba(184,92,56,0.2)', borderRadius: '2px', background: '#FFFFFF', boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
-                
+
                 <div style={{ borderTop: '1px solid rgba(184,92,56,0.1)', paddingTop: '16px', marginTop: '10px' }}>
-                  <button 
+                  <button
                     type="submit"
                     style={{
                       width: '100%',
@@ -1397,7 +1512,7 @@ export default function ShopPage({ onBackToPortal }) {
 
       {/* Cookie Consent toast */}
       {cookieConsent && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             bottom: '24px',
@@ -1422,7 +1537,7 @@ export default function ShopPage({ onBackToPortal }) {
             We use cookies and analytics to improve your replica browsing experience. By accepting, you consent to the use of cookies as per our Privacy Policy.
           </p>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button 
+            <button
               onClick={handleDeclineCookies}
               style={{
                 background: 'transparent',
@@ -1439,7 +1554,7 @@ export default function ShopPage({ onBackToPortal }) {
             >
               Decline
             </button>
-            <button 
+            <button
               onClick={handleAcceptCookies}
               style={{
                 background: '#B85C38',

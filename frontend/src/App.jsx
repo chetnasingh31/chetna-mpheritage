@@ -123,7 +123,7 @@ export default function App() {
     });
 
     return () => revealObserver.disconnect();
-  }, [notices, activeNoticeCategory]); // Re-observe when notices (dynamic list) or filter changes
+  }, [notices, activeNoticeCategory, currentView]); // Re-observe when notices (dynamic list) or filter changes
 
   // Toggle detail drawer
   const handleOpenDrawer = (id) => {
@@ -171,9 +171,9 @@ export default function App() {
       <>
         {/* Floating particles background */}
         <div id="particles" className="particles" />
-        <LoginPage 
-          onClose={() => setCurrentView('home')} 
-          onSuccess={handleLoginSuccess} 
+        <LoginPage
+          onClose={() => setCurrentView('home')}
+          onSuccess={handleLoginSuccess}
         />
       </>
     );
@@ -184,11 +184,11 @@ export default function App() {
       <>
         {/* Floating particles background */}
         <div id="particles" className="particles" />
-        <ShopPage 
+        <ShopPage
           onBackToPortal={() => {
             setCurrentView('home');
             window.scrollTo(0, 0);
-          }} 
+          }}
         />
       </>
     );
@@ -199,7 +199,7 @@ export default function App() {
       <>
         {/* Floating particles background */}
         <div id="particles" className="particles" />
-        <AdminDashboard 
+        <AdminDashboard
           notices={notices}
           onClose={() => setCurrentView('home')}
           onNoticeUpdate={fetchNotices}
@@ -215,7 +215,7 @@ export default function App() {
       <div id="particles" className="particles" />
 
       {/* Structured Site Layout */}
-      <Navbar 
+      <Navbar
         onSearchClick={() => setIsSearchOpen(true)}
         onStaffLoginClick={() => {
           if (isAdminAuthenticated) {
@@ -225,13 +225,14 @@ export default function App() {
           }
         }}
         isAdmin={isAdminAuthenticated}
+        onLogout={handleLogout}
         onReplicaClick={() => {
           setCurrentView('shop');
           window.scrollTo(0, 0);
         }}
       />
 
-      <Hero 
+      <Hero
         latestNotice={notices.length > 0 ? notices[0] : null}
         onPlanVisitClick={() => handleOpenBooking()}
         onShopClick={() => {
@@ -240,7 +241,7 @@ export default function App() {
         }}
       />
 
-      <Newsroom 
+      <Newsroom
         notices={notices}
         activeCategory={activeNoticeCategory}
         onCategoryChange={setActiveNoticeCategory}
@@ -262,7 +263,7 @@ export default function App() {
 
       {/* Dynamic Overlays & Modals */}
       {isDrawerOpen && (
-        <DetailDrawer 
+        <DetailDrawer
           id={activeDrawerId}
           onClose={handleCloseDrawer}
           onBook={handleOpenBooking}
@@ -270,7 +271,7 @@ export default function App() {
       )}
 
       {isSearchOpen && (
-        <SearchOverlay 
+        <SearchOverlay
           notices={notices}
           onClose={() => setIsSearchOpen(false)}
           onSelectResult={handleOpenDrawer}
@@ -278,7 +279,7 @@ export default function App() {
       )}
 
       {isBookingOpen && (
-        <BookingModal 
+        <BookingModal
           preselectedId={preselectedBookingId}
           onClose={handleCloseBooking}
         />

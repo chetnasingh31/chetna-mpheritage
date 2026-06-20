@@ -89,16 +89,16 @@ export default function Stats() {
       aria-label="Heritage portal statistics"
     >
       <OrnamentalDivider />
-      <div className="stats-shell" style={{ maxWidth: '1440px', margin: '0 auto', padding: '0 48px' }}>
-        <div style={{ display: 'flex', gap: '48px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className="stats-shell" style={{ width: '100%', maxWidth: '100%', margin: '0 auto', padding: '0 48px' }}>
+        <div style={{ display: 'flex', gap: '48px', alignItems: 'stretch', flexWrap: 'nowrap', width: '100%' }}>
           {/* Left Column: Stats Details and Counters */}
-          <div style={{ flex: '2 1 600px' }}>
+          <div style={{ flex: '1 1 auto', minWidth: 0 }}>
             <div className="stats-header reveal" style={{ marginBottom: '32px' }}>
               <div className="section-label">At a Glance</div>
               <h2 className="stats-title" style={{ margin: 0 }}>Madhya Pradesh Heritage Coverage</h2>
             </div>
 
-            <div className="stats-inner" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+            <div className="stats-inner">
               {STATS.map((stat) => (
                 <div className="stat-block reveal" key={stat.key} style={{ padding: '24px 16px' }}>
                   <div className="stat-number" id={`stat-${stat.key}`}>
@@ -115,8 +115,7 @@ export default function Stats() {
           <div 
             className="reveal-right" 
             style={{ 
-              flex: '1 1 300px', 
-              minHeight: '380px', 
+              flex: '0 0 350px', 
               position: 'relative', 
               borderRadius: 'var(--radius-lg)', 
               overflow: 'hidden', 

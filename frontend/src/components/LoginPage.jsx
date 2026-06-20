@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import OrnamentalDivider from './OrnamentalDivider';
 
 const SEEDED_ROLES = [
   { name: 'System Administrator', email: 'superadmin@mp.gov.in' },
@@ -73,6 +74,9 @@ export default function LoginPage({ onClose, onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [generatedCode, setGeneratedCode] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -85,11 +89,26 @@ export default function LoginPage({ onClose, onSuccess }) {
     const isLegacyLogin = inputEmail === 'admin' && password === 'admin';
 
     if (isDemoLogin || isLegacyLogin) {
+      // Generate a secure random 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedCode(code);
+      setShowVerification(true);
+    } else {
+      setError('Invalid administrative credentials or role unauthorized.');
+    }
+  };
+
+  const handleVerify = (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (verificationCode.trim() === generatedCode) {
+      const inputEmail = email.toLowerCase().trim();
       sessionStorage.setItem('mp_heritage_admin', 'true');
       sessionStorage.setItem('mp_heritage_user_role', inputEmail);
       onSuccess();
     } else {
-      setError('Invalid administrative credentials or role unauthorized.');
+      setError('Incorrect verification code. Please try again.');
     }
   };
 
@@ -198,9 +217,9 @@ export default function LoginPage({ onClose, onSuccess }) {
           width: '100%',
           maxWidth: '480px',
           background: '#FCFAF5',
-          border: '3px double var(--gold)',
-          borderRadius: '2px',
-          boxShadow: 'inset 0 0 60px rgba(184, 92, 56, 0.05), 0 20px 50px rgba(13, 11, 8, 0.06)',
+          border: '1px solid rgba(184, 92, 56, 0.25)',
+          borderRadius: '4px',
+          boxShadow: 'inset 0 0 60px rgba(184, 92, 56, 0.03), 0 20px 50px rgba(13, 11, 8, 0.05)',
           padding: '48px 40px',
           boxSizing: 'border-box',
           textAlign: 'center',
@@ -219,163 +238,301 @@ export default function LoginPage({ onClose, onSuccess }) {
           <div className="login-emblem-glow" style={{ display: 'inline-block', marginBottom: '12px' }}>
             <SanchiTorana size={64} />
           </div>
-          <h3 style={{ fontSize: '20px', fontFamily: "'Cinzel', serif", color: 'var(--gold)', margin: '0 0 6px 0', letterSpacing: '1.5px' }}>
+          <h3 style={{ fontSize: '22px', fontFamily: "'Cinzel', serif", color: 'var(--gold)', margin: '0 0 8px 0', letterSpacing: '1px', fontWeight: 600 }}>
             Staff &amp; Institution Login
           </h3>
-          <p style={{ fontSize: '13px', fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', color: 'var(--text-dim)', margin: 0 }}>
+          <p style={{ fontSize: '12px', fontFamily: "'Inter', sans-serif", color: 'var(--text-dim)', margin: 0, fontWeight: 500, letterSpacing: '0.2px' }}>
             Authorised personnel only. Access is role-scoped and audited.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <label 
-              htmlFor="login-email" 
-              style={{ display: 'block', fontSize: '10px', fontFamily: "'Cinzel', serif", letterSpacing: '1px', fontWeight: '700', color: 'var(--gold-light)', marginBottom: '6px' }}
-            >
-              Email
-            </label>
-            <input 
-              type="email" 
-              id="login-email" 
-              placeholder="Enter email address" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required 
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                border: '1px solid rgba(184, 92, 56, 0.25)',
-                borderRadius: '2px',
-                fontSize: '14px',
-                background: '#FCFAF5',
-                color: '#111111',
-                outline: 'none',
-                boxSizing: 'border-box',
-                fontFamily: 'inherit'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '24px' }}>
-            <label 
-              htmlFor="login-password" 
-              style={{ display: 'block', fontSize: '10px', fontFamily: "'Cinzel', serif", letterSpacing: '1px', fontWeight: '700', color: 'var(--gold-light)', marginBottom: '6px' }}
-            >
-              Password
-            </label>
-            <input 
-              type="password" 
-              id="login-password" 
-              placeholder="Enter password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required 
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                border: '1px solid rgba(184, 92, 56, 0.25)',
-                borderRadius: '2px',
-                fontSize: '14px',
-                background: '#FCFAF5',
-                color: '#111111',
-                outline: 'none',
-                boxSizing: 'border-box',
-                fontFamily: 'inherit'
-              }}
-            />
-          </div>
-
-          {error && (
-            <div style={{ color: '#E87070', fontSize: '12px', marginBottom: '16px', textAlign: 'center', fontWeight: '600', fontFamily: "'Cormorant Garamond', serif" }}>
-              {error}
-            </div>
-          )}
-
-          <button 
-            type="submit" 
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: 'linear-gradient(135deg, var(--gold), #9A4B29)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '2px',
-              fontSize: '12px',
-              fontFamily: "'Cinzel', serif",
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '1.5px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(184,92,56,0.2)',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(184,92,56,0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = '0 4px 15px rgba(184,92,56,0.2)';
+        {!showVerification ? (
+          <form 
+            onSubmit={handleSubmit} 
+            style={{ 
+              textAlign: 'left',
+              border: '1px solid rgba(184, 92, 56, 0.14)',
+              borderRadius: '4px',
+              padding: '24px 20px',
+              background: 'rgba(255, 255, 255, 0.45)',
+              boxShadow: '0 6px 18px rgba(184, 92, 56, 0.02)',
+              boxSizing: 'border-box'
             }}
           >
-            Sign in
-          </button>
-        </form>
-
-        {/* Demo role picker section */}
-        <div 
-          style={{ 
-            marginTop: '28px', 
-            borderTop: '1px solid rgba(184, 92, 56, 0.2)', 
-            paddingTop: '20px',
-            textAlign: 'left' 
-          }}
-        >
-          <div style={{ fontSize: '11px', fontFamily: "'Cinzel', serif", fontWeight: '700', color: 'var(--gold)', marginBottom: '10px', letterSpacing: '0.5px' }}>
-            Demo Role Accounts (Password: demo123)
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', maxHeight: '150px', overflowY: 'auto', paddingRight: '4px' }}>
-            {SEEDED_ROLES.map((role) => (
-              <button
-                key={role.email}
-                type="button"
-                onClick={() => {
-                  setEmail(role.email);
-                  setPassword('demo123');
-                }}
-                style={{
-                  background: 'rgba(184, 92, 56, 0.03)',
-                  border: '1px solid rgba(184, 92, 56, 0.15)',
-                  borderRadius: '2px',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  fontSize: '11px',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  fontFamily: 'inherit',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(184, 92, 56, 0.07)';
-                  e.currentTarget.style.borderColor = 'var(--gold)';
-                  e.currentTarget.style.transform = 'translateX(2px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(184, 92, 56, 0.03)';
-                  e.currentTarget.style.borderColor = 'rgba(184, 92, 56, 0.15)';
-                  e.currentTarget.style.transform = 'none';
-                }}
+            <div style={{ marginBottom: '16px' }}>
+              <label 
+                htmlFor="login-email" 
+                style={{ display: 'block', fontSize: '10px', fontFamily: "'Inter', sans-serif", letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: '700', color: '#8c8070', marginBottom: '6px' }}
               >
-                <span style={{ fontWeight: '700', fontFamily: "'Cormorant Garamond', serif", fontSize: '13px', color: 'var(--gold-light)' }}>{role.name}</span>
-                <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>{role.email}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+                Email
+              </label>
+              <input 
+                type="email" 
+                id="login-email" 
+                placeholder="Enter email address" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required 
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  border: '1px solid rgba(184, 92, 56, 0.25)',
+                  borderRadius: '2px',
+                  fontSize: '13px',
+                  background: '#FCFAF5',
+                  color: '#111111',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label 
+                htmlFor="login-password" 
+                style={{ display: 'block', fontSize: '10px', fontFamily: "'Inter', sans-serif", letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: '700', color: '#8c8070', marginBottom: '6px' }}
+              >
+                Password
+              </label>
+              <input 
+                type="password" 
+                id="login-password" 
+                placeholder="Enter password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required 
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  border: '1px solid rgba(184, 92, 56, 0.25)',
+                  borderRadius: '2px',
+                  fontSize: '13px',
+                  background: '#FCFAF5',
+                  color: '#111111',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              />
+            </div>
+
+            {error && (
+              <div style={{ color: '#E87070', fontSize: '12px', marginBottom: '16px', textAlign: 'center', fontWeight: '600', fontFamily: "'Inter', sans-serif" }}>
+                {error}
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'linear-gradient(135deg, var(--gold), #9A4B29)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '2px',
+                fontSize: '11px',
+                fontFamily: "'Cinzel', serif",
+                fontWeight: '700',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(184,92,56,0.2)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(184,92,56,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(184,92,56,0.2)';
+              }}
+            >
+              Sign in
+            </button>
+          </form>
+        ) : (
+          <form 
+            onSubmit={handleVerify} 
+            style={{ 
+              textAlign: 'left',
+              border: '1px solid rgba(184, 92, 56, 0.14)',
+              borderRadius: '4px',
+              padding: '24px 20px',
+              background: 'rgba(255, 255, 255, 0.45)',
+              boxShadow: '0 6px 18px rgba(184, 92, 56, 0.02)',
+              boxSizing: 'border-box'
+            }}
+          >
+            <div style={{ marginBottom: '16px', background: 'rgba(184, 92, 56, 0.06)', border: '1px dashed rgba(184, 92, 56, 0.3)', borderRadius: '4px', padding: '12px 14px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+              A security verification code has been generated. For demonstration, please enter the following code to proceed:
+              <div style={{ fontSize: '18px', fontWeight: 'bold', letterSpacing: '2px', color: 'var(--gold)', marginTop: '8px', textAlign: 'center', fontFamily: 'monospace' }}>
+                {generatedCode}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label 
+                htmlFor="verification-code" 
+                style={{ display: 'block', fontSize: '10px', fontFamily: "'Inter', sans-serif", letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: '700', color: '#8c8070', marginBottom: '6px' }}
+              >
+                Verification Code
+              </label>
+              <input 
+                type="text" 
+                id="verification-code" 
+                placeholder="Enter 6-digit code" 
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                required 
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  border: '1px solid rgba(184, 92, 56, 0.25)',
+                  borderRadius: '2px',
+                  fontSize: '16px',
+                  letterSpacing: '4px',
+                  textAlign: 'center',
+                  background: '#FCFAF5',
+                  color: '#111111',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  fontFamily: "monospace"
+                }}
+              />
+            </div>
+
+            {error && (
+              <div style={{ color: '#E87070', fontSize: '12px', marginBottom: '16px', textAlign: 'center', fontWeight: '600', fontFamily: "'Inter', sans-serif" }}>
+                {error}
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'linear-gradient(135deg, var(--gold), #9A4B29)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '2px',
+                fontSize: '11px',
+                fontFamily: "'Cinzel', serif",
+                fontWeight: '700',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(184,92,56,0.2)',
+                transition: 'all 0.2s ease',
+                marginBottom: '10px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(184,92,56,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(184,92,56,0.2)';
+              }}
+            >
+              Verify &amp; Sign In
+            </button>
+
+            <button 
+              type="button"
+              onClick={() => {
+                setShowVerification(false);
+                setVerificationCode('');
+                setError('');
+              }}
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: 'transparent',
+                color: 'var(--text-dim)',
+                border: '1px solid rgba(184, 92, 56, 0.15)',
+                borderRadius: '2px',
+                fontSize: '10px',
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: '600',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(184, 92, 56, 0.04)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              ← Back to Login
+            </button>
+          </form>
+        )}
+
+        {!showVerification && (
+          <>
+            {/* Ornamental Divider Accent */}
+            <div style={{ marginTop: '24px', marginBottom: '16px', opacity: 0.85 }}>
+              <OrnamentalDivider />
+            </div>
+
+            {/* Demo role picker section */}
+            <div 
+              style={{ 
+                textAlign: 'left' 
+              }}
+            >
+              <div style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: '700', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '10px', letterSpacing: '0.8px' }}>
+                Demo Role Accounts (Password: demo123)
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {SEEDED_ROLES.map((role) => (
+                  <button
+                    key={role.email}
+                    type="button"
+                    onClick={() => {
+                      setEmail(role.email);
+                      setPassword('demo123');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: '1px solid rgba(184, 92, 56, 0.08)',
+                      padding: '10px 0',
+                      textAlign: 'left',
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontFamily: "'Inter', sans-serif",
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderBottomColor = 'var(--gold)';
+                      e.currentTarget.style.paddingLeft = '6px';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderBottomColor = 'rgba(184, 92, 56, 0.08)';
+                      e.currentTarget.style.paddingLeft = '0';
+                    }}
+                  >
+                    <span style={{ fontWeight: '600', color: 'var(--gold)' }}>{role.name}</span>
+                    <span style={{ fontSize: '11px', color: '#111111', fontWeight: 500 }}>{role.email}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
