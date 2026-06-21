@@ -4,7 +4,7 @@ import { HERITAGE_DATA } from '../data/heritageData';
 export default function BookingModal({ preselectedId, onClose }) {
   const [destinationId, setDestinationId] = useState(preselectedId || 'bhimbetka');
   const [origin, setOrigin] = useState('indian');
-  
+
   // Default date to tomorrow
   const getTomorrowDateString = () => {
     const today = new Date();
@@ -70,7 +70,7 @@ export default function BookingModal({ preselectedId, onClose }) {
     const offlineBookings = JSON.parse(localStorage.getItem('mp_heritage_bookings') || '[]');
     offlineBookings.push(confirmedBooking);
     localStorage.setItem('mp_heritage_bookings', JSON.stringify(offlineBookings));
-    
+
     setBookingResult(confirmedBooking);
     setIsSubmitting(false);
   };
@@ -94,22 +94,22 @@ export default function BookingModal({ preselectedId, onClose }) {
       <div className="login-modal-overlay" onClick={onClose}></div>
       <div className="login-modal-content" style={{ maxWidth: '460px' }}>
         <button className="btn-login-close" onClick={onClose} aria-label="Close modal">×</button>
-        
+
         {!bookingResult ? (
           <div id="booking-form-container">
             <div className="login-modal-header" style={{ marginBottom: '20px' }}>
               <h3 className="login-modal-title" id="booking-title">E-Ticket Booking</h3>
               <p className="login-modal-subtitle">MP Archaeology Visitor Portal</p>
             </div>
-            
+
             <form id="ticket-form" onSubmit={handleBookingSubmit}>
               <div className="login-form-group">
                 <label className="login-form-label">Select Destination</label>
-                <select 
-                  className="login-form-input" 
+                <select
+                  className="login-form-input"
                   value={destinationId}
                   onChange={(e) => setDestinationId(e.target.value)}
-                  style={{ background: '#ffffff', color: '#000000' }} 
+                  style={{ background: '#201A12' }}
                   required
                 >
                   {Object.keys(HERITAGE_DATA).map((key) => {
@@ -127,14 +127,14 @@ export default function BookingModal({ preselectedId, onClose }) {
                   })}
                 </select>
               </div>
-              
+
               <div className="login-form-group">
                 <label className="login-form-label">Visitor Origin</label>
-                <select 
-                  className="login-form-input" 
+                <select
+                  className="login-form-input"
                   value={origin}
                   onChange={(e) => setOrigin(e.target.value)}
-                  style={{ background: '#ffffff', color: '#000000' }} 
+                  style={{ background: 'lightgrey' }}
                   required
                 >
                   <option value="indian">Indian Citizen / SAARC / BIMSTEC</option>
@@ -145,45 +145,45 @@ export default function BookingModal({ preselectedId, onClose }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="login-form-group">
                   <label className="login-form-label">Date of Visit</label>
-                  <input 
-                    type="date" 
-                    className="login-form-input" 
+                  <input
+                    type="date"
+                    className="login-form-input"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    required 
-                    style={{ colorScheme: 'dark' }} 
+                    required
+                    style={{ colorScheme: 'dark' }}
                   />
                 </div>
                 <div className="login-form-group">
                   <label className="login-form-label">Number of Tickets</label>
-                  <input 
-                    type="number" 
-                    className="login-form-input" 
-                    min="1" 
-                    max="10" 
+                  <input
+                    type="number"
+                    className="login-form-input"
+                    min="1"
+                    max="10"
                     value={tickets}
                     onChange={(e) => setTickets(parseInt(e.target.value, 10) || 1)}
-                    required 
+                    required
                   />
                 </div>
               </div>
 
-              <div 
-                style={{ 
-                  background: 'rgba(201,168,76,0.06)', 
-                  border: '1px solid rgba(201,168,76,0.15)', 
-                  borderRadius: 'var(--radius-sm)', 
-                  padding: '12px', 
-                  marginBottom: '20px', 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center' 
+              <div
+                style={{
+                  background: 'rgba(201,168,76,0.06)',
+                  border: '1px solid rgba(201,168,76,0.15)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '12px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
                 }}
               >
                 <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)' }}>
                   Estimated Total:
                 </span>
-                <strong style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', color: 'var(--gold-light)' }}>
+                <strong style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '24px', color: 'var(--gold-light)' }}>
                   ₹{totalCost.toFixed(2)}
                 </strong>
               </div>
@@ -199,11 +199,11 @@ export default function BookingModal({ preselectedId, onClose }) {
               <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--gold)' }}>
                 Govt. of Madhya Pradesh
               </div>
-              <h4 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', color: 'var(--text-primary)', marginTop: '4px' }}>
+              <h4 style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '22px', color: 'var(--text-primary)', marginTop: '4px' }}>
                 Archaeology E-Ticket
               </h4>
               <hr style={{ border: 'none', borderBottom: '1px solid rgba(201,168,76,0.15)', margin: '12px 0' }} />
-              
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', textAlign: 'left', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                 <div>
                   <strong style={{ color: 'var(--text-dim)', display: 'block', fontSize: '9px', textTransform: 'uppercase' }}>
@@ -274,16 +274,16 @@ export default function BookingModal({ preselectedId, onClose }) {
               </div>
             </div>
 
-            <button 
-              className="btn-login-submit" 
-              onClick={() => window.print()} 
+            <button
+              className="btn-login-submit"
+              onClick={() => window.print()}
               style={{ marginTop: '20px', background: 'var(--gold)', color: 'var(--ink)' }}
             >
               Print Ticket
             </button>
-            <button 
-              className="btn-login-submit" 
-              onClick={handleResetForm} 
+            <button
+              className="btn-login-submit"
+              onClick={handleResetForm}
               style={{ marginTop: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(247,240,227,0.2)', color: 'var(--text-primary)' }}
             >
               Book Another Ticket

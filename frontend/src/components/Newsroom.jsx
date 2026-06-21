@@ -105,7 +105,7 @@ export default function Newsroom({ notices, activeCategory, onCategoryChange }) 
               <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2.5px', color: '#FFFFFF', fontWeight: '700' }}>
                 Bulletins &amp; Tenders
               </span>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px', color: '#FFFFFF', margin: '6px 0 0 0', fontWeight: '500' }}>
+              <h3 style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '22px', color: '#FFFFFF', margin: '6px 0 0 0', fontWeight: '500' }}>
                 Official Updates
               </h3>
               <p style={{ fontSize: '12px', color: '#FFFFFF', marginTop: '8px', lineHeight: '1.4', margin: 0 }}>

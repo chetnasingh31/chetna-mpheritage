@@ -143,7 +143,7 @@ export default function Stats() {
               <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--gold)', fontWeight: '700' }}>
                 Systematic Documentation
               </span>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', color: 'var(--text-primary)', margin: '8px 0 0 0', fontWeight: '500' }}>
+              <h3 style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '24px', color: 'var(--text-primary)', margin: '8px 0 0 0', fontWeight: '500' }}>
                 Mapping &amp; Preservation
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: '1.4', margin: 0 }}>

@@ -42,7 +42,7 @@ export default function LoginModal({ onClose, onSuccess }) {
         
         <div className="login-modal-header" style={{ marginBottom: '20px' }}>
           <div className="login-modal-emblem" aria-hidden="true" style={{ margin: '0 auto 12px' }}>मध्य</div>
-          <h3 className="login-modal-title" id="login-title" style={{ fontSize: '20px', fontFamily: "'Cinzel', serif" }}>
+          <h3 className="login-modal-title" id="login-title" style={{ fontSize: '20px', fontFamily: "'Montserrat', sans-serif" }}>
             Staff &amp; institution login
           </h3>
           <p className="login-modal-subtitle" style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>

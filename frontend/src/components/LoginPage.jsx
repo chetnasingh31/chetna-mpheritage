@@ -192,7 +192,7 @@ export default function LoginPage({ onClose, onSuccess }) {
           alignItems: 'center',
           gap: '8px',
           boxShadow: '0 4px 12px rgba(184,92,56,0.04)',
-          fontFamily: "'Cinzel', serif",
+          fontFamily: "'Montserrat', sans-serif",
           fontSize: '11px',
           letterSpacing: '1px',
           transition: 'all 0.2s ease',
@@ -238,7 +238,7 @@ export default function LoginPage({ onClose, onSuccess }) {
           <div className="login-emblem-glow" style={{ display: 'inline-block', marginBottom: '12px' }}>
             <SanchiTorana size={64} />
           </div>
-          <h3 style={{ fontSize: '22px', fontFamily: "'Cinzel', serif", color: 'var(--gold)', margin: '0 0 8px 0', letterSpacing: '1px', fontWeight: 600 }}>
+          <h3 style={{ fontSize: '22px', fontFamily: "'Montserrat', sans-serif", color: 'var(--gold)', margin: '0 0 8px 0', letterSpacing: '1px', fontWeight: 600 }}>
             Staff &amp; Institution Login
           </h3>
           <p style={{ fontSize: '12px', fontFamily: "'Inter', sans-serif", color: 'var(--text-dim)', margin: 0, fontWeight: 500, letterSpacing: '0.2px' }}>
@@ -333,7 +333,7 @@ export default function LoginPage({ onClose, onSuccess }) {
                 border: 'none',
                 borderRadius: '2px',
                 fontSize: '11px',
-                fontFamily: "'Cinzel', serif",
+                fontFamily: "'Montserrat', sans-serif",
                 fontWeight: '700',
                 textTransform: 'uppercase',
                 letterSpacing: '1px',
@@ -420,7 +420,7 @@ export default function LoginPage({ onClose, onSuccess }) {
                 border: 'none',
                 borderRadius: '2px',
                 fontSize: '11px',
-                fontFamily: "'Cinzel', serif",
+                fontFamily: "'Montserrat', sans-serif",
                 fontWeight: '700',
                 textTransform: 'uppercase',
                 letterSpacing: '1px',
