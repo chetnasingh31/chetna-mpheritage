@@ -6,9 +6,18 @@ An official-grade, premium digital portal designed for the **Directorate of Arch
 
 ## 🏛️ Project Architecture & Modules
 
-The platform is split into two major modules integrated within a single-page React application:
+The project is structured as a mono-repository containing both frontend and backend modules:
 
-### 1. Public Visitor Portal
+```
+.
+├── backend/            # Node/Express API Server (Skeleton setup)
+├── frontend/           # React + Vite application (Portal, Shop, & Admin Console)
+├── package.json        # Root workspace manager and orchestrator
+├── .gitignore          # Unified root-level Git ignore configuration
+└── README.md           # Master documentation file
+```
+
+### 1. Public Visitor Portal (`frontend/`)
 * **Heritage Exploration**: Discover UNESCO World Heritage sites (Bhimbetka, Sanchi, Khajuraho) and regional state museums.
 * **E-Ticket Booking System**: Fully interactive online e-ticket booking modal supporting nationality-based pricing tier checks, date picker, automated ticket quantity calculation, and a printable PDF-style receipt with procedural vector QR code generator.
 * **Souvenir Replica Shop**: 
@@ -52,6 +61,7 @@ Following Indian Government web accessibility and design guidelines, the interfa
 * **Build Tooling**: Vite (featuring fast Hot Module Replacement)
 * **Styling**: Pure CSS (Design tokens configured in `index.css`)
 * **Deployment & Mocking**: LocalStorage-backed state persistence for notices, bookings, and custom review records.
+* **Backend Framework**: Express.js + Node.js (with structured Config, Controller, Route, Model, and Middleware directories)
 
 ---
 
@@ -63,21 +73,19 @@ Following Indian Government web accessibility and design guidelines, the interfa
 
 ### Setup & Installation
 
-1. Navigate to the frontend directory:
+From the project root directory, run the following commands:
+
+1. **Install all dependencies** (for both frontend and backend):
    ```bash
-   cd frontend
+   npm run install:all
    ```
 
-2. Install the dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Run the local development server:
+2. **Start the development servers** concurrently:
    ```bash
    npm run dev
    ```
-   The portal will be running locally at `http://localhost:5173`.
+   * **Frontend Server**: running at `http://localhost:5173`
+   * **Backend Server**: running at `http://localhost:5000`
 
 ### Demo Credentials
 To access the Administrator Console (`/admin`):
