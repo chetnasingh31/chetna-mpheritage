@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function Hero({ latestNotice, onPlanVisitClick, onShopClick }) {
+  const [videoLoaded, setVideoLoaded] = useState(false);
+
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if (el) {
@@ -12,15 +14,19 @@ export default function Hero({ latestNotice, onPlanVisitClick, onShopClick }) {
     <section className="hero" id="hero" aria-labelledby="hero-title">
       <div className="hero-bg">
         <video
-          className="hero-bg-video"
-          src="/heritage-hero.mp4"
+          className={`hero-bg-video ${videoLoaded ? 'loaded' : ''}`}
           autoPlay
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="auto"
+          onPlay={() => setVideoLoaded(true)}
           aria-hidden="true"
-        />
+          disablePictureInPicture
+        >
+          <source src="/heritage-hero.webm" type="video/webm" />
+          <source src="/heritage-hero.mp4" type="video/mp4" />
+        </video>
       </div>
       <div className="hero-mandala-wrap" aria-hidden="true">
         <div className="hero-ring"><span className="hero-ring-dot"></span></div>

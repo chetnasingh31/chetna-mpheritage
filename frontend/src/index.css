@@ -2763,6 +2763,12 @@ body {
   height: 100%;
   object-fit: cover;
   display: block;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.hero-bg-video.loaded {
+  opacity: 1;
 }
 
 .hero-overlay {
