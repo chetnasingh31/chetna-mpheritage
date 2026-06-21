@@ -4477,10 +4477,25 @@ body {
   }
   
   .nav-logo-sub {
-    font-size: 8px;
+    display: none;
   }
   
   .nav-logo-title {
     font-size: 14px;
+  }
+
+  .nav-logo-emblem {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+  }
+
+  .btn-login {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+
+  .nav-actions {
+    gap: 6px;
   }
 }
