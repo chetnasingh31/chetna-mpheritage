@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function Navbar({ onSearchClick, onStaffLoginClick, isAdmin, onLogout, onReplicaClick }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
+    setMenuOpen(false);
   };
 
   return (
@@ -13,7 +16,10 @@ export default function Navbar({ onSearchClick, onStaffLoginClick, isAdmin, onLo
       <div
         className="nav-logo"
         style={{ cursor: 'pointer' }}
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onClick={() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setMenuOpen(false);
+        }}
       >
         <div className="nav-logo-emblem">मध्य</div>
         <div className="nav-logo-text">
@@ -22,7 +28,22 @@ export default function Navbar({ onSearchClick, onStaffLoginClick, isAdmin, onLo
         </div>
       </div>
 
-      <ul className="nav-links">
+      <button 
+        className="nav-hamburger" 
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label="Toggle navigation menu"
+        aria-expanded={menuOpen}
+      >
+        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+          {menuOpen ? (
+            <path d="M6 18 18 6M6 6l12 12" />
+          ) : (
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          )}
+        </svg>
+      </button>
+
+      <ul className={`nav-links ${menuOpen ? 'mobile-open' : ''}`}>
         <li className="nav-item-dropdown">
           <a href="#section-categories" onClick={(e) => { e.preventDefault(); scrollToSection('section-categories'); }}>
             <b>EXPLORE <span style={{ fontSize: '8px', marginLeft: '3px' }}>▼</span></b>
