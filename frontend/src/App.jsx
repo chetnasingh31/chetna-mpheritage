@@ -15,6 +15,10 @@ import LoginPage from './components/LoginPage';
 import AdminDashboard from './components/AdminDashboard';
 import BookingModal from './components/BookingModal';
 import ShopPage from './components/ShopPage';
+import ExplorePage from './components/ExplorePage';
+import MuseumsListingPage from './components/MuseumsListingPage';
+import MuseumDetailPage from './components/MuseumDetailPage';
+
 
 export default function App() {
   // Notices states
@@ -25,7 +29,8 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeDrawerId, setActiveDrawerId] = useState(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'login', 'admin'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'login', 'admin', 'explore', 'museums', 'museum-details'
+  const [selectedMuseumId, setSelectedMuseumId] = useState(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preselectedBookingId, setPreselectedBookingId] = useState(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(
@@ -241,34 +246,95 @@ export default function App() {
           setCurrentView('shop');
           window.scrollTo(0, 0);
         }}
-      />
-
-      <Hero
-        latestNotice={notices.length > 0 ? notices[0] : null}
-        onPlanVisitClick={() => handleOpenBooking()}
-        onShopClick={() => {
-          setCurrentView('shop');
+        onViewChange={(view) => {
+          setCurrentView(view);
           window.scrollTo(0, 0);
         }}
+        currentView={currentView}
       />
 
-      <Newsroom
-        notices={notices}
-        activeCategory={activeNoticeCategory}
-        onCategoryChange={setActiveNoticeCategory}
-      />
+      {currentView === 'home' && (
+        <>
+          <Hero
+            latestNotice={notices.length > 0 ? notices[0] : null}
+            onPlanVisitClick={() => handleOpenBooking()}
+            onShopClick={() => {
+              setCurrentView('shop');
+              window.scrollTo(0, 0);
+            }}
+          />
 
-      <Categories />
+          <Newsroom
+            notices={notices}
+            activeCategory={activeNoticeCategory}
+            onCategoryChange={setActiveNoticeCategory}
+          />
 
-      <Stats />
+          <Categories />
 
-      <Monuments onOpenDetails={handleOpenDrawer} />
+          <Stats />
 
-      <Museums onOpenDetails={handleOpenDrawer} />
+          <Monuments onOpenDetails={handleOpenDrawer} />
 
-      <Research />
+          <Museums onOpenDetails={(id) => {
+            if (id.startsWith('museum-')) {
+              setSelectedMuseumId(id);
+              setCurrentView('museum-details');
+              window.scrollTo(0, 0);
+            } else {
+              handleOpenDrawer(id);
+            }
+          }} />
 
-      <CTA onPlanVisitClick={() => handleOpenBooking()} />
+          <Research />
+
+          <CTA onPlanVisitClick={() => handleOpenBooking()} />
+        </>
+      )}
+
+      {currentView === 'explore' && (
+        <ExplorePage 
+          onViewChange={(view) => {
+            setCurrentView(view);
+            window.scrollTo(0, 0);
+          }}
+          onOpenDetails={(id) => {
+            if (id.startsWith('museum-')) {
+              setSelectedMuseumId(id);
+              setCurrentView('museum-details');
+              window.scrollTo(0, 0);
+            } else {
+              handleOpenDrawer(id);
+            }
+          }}
+          onBookClick={(id) => handleOpenBooking(id)}
+        />
+      )}
+
+      {currentView === 'museums' && (
+        <MuseumsListingPage 
+          onViewChange={(view) => {
+            setCurrentView(view);
+            window.scrollTo(0, 0);
+          }}
+          onOpenDetails={(id) => {
+            setSelectedMuseumId(id);
+            setCurrentView('museum-details');
+            window.scrollTo(0, 0);
+          }}
+        />
+      )}
+
+      {currentView === 'museum-details' && (
+        <MuseumDetailPage 
+          museumId={selectedMuseumId}
+          onBack={() => {
+            setCurrentView('museums');
+            window.scrollTo(0, 0);
+          }}
+          onBookClick={(id) => handleOpenBooking(id)}
+        />
+      )}
 
       <Footer />
 
@@ -285,7 +351,16 @@ export default function App() {
         <SearchOverlay
           notices={notices}
           onClose={() => setIsSearchOpen(false)}
-          onSelectResult={handleOpenDrawer}
+          onSelectResult={(id) => {
+            setIsSearchOpen(false);
+            if (id.startsWith('museum-')) {
+              setSelectedMuseumId(id);
+              setCurrentView('museum-details');
+              window.scrollTo(0, 0);
+            } else {
+              handleOpenDrawer(id);
+            }
+          }}
         />
       )}
 

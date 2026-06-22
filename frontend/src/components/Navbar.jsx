@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
 
-export default function Navbar({ onSearchClick, onStaffLoginClick, isAdmin, onLogout, onReplicaClick }) {
+export default function Navbar({ onSearchClick, onStaffLoginClick, isAdmin, onLogout, onReplicaClick, onViewChange, currentView }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const scrollToSection = (id) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+    if (onViewChange && currentView !== 'home') {
+      onViewChange('home');
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 150);
+    } else {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
     }
     setMenuOpen(false);
   };
@@ -17,7 +27,11 @@ export default function Navbar({ onSearchClick, onStaffLoginClick, isAdmin, onLo
         className="nav-logo"
         style={{ cursor: 'pointer' }}
         onClick={() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          if (onViewChange) {
+            onViewChange('home');
+          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
           setMenuOpen(false);
         }}
       >
@@ -45,18 +59,18 @@ export default function Navbar({ onSearchClick, onStaffLoginClick, isAdmin, onLo
 
       <ul className={`nav-links ${menuOpen ? 'mobile-open' : ''}`}>
         <li className="nav-item-dropdown">
-          <a href="#section-categories" onClick={(e) => { e.preventDefault(); scrollToSection('section-categories'); }}>
+          <a href="#explore" onClick={(e) => { e.preventDefault(); if (onViewChange) onViewChange('explore'); setMenuOpen(false); }}>
             <b>EXPLORE <span style={{ fontSize: '8px', marginLeft: '3px' }}>▼</span></b>
           </a>
           <ul className="dropdown-menu">
             <li>
-              <button className="dropdown-item" onClick={() => scrollToSection('section-museums')}>Museums</button>
+              <button className="dropdown-item" onClick={() => { if (onViewChange) onViewChange('museums'); setMenuOpen(false); }}>Museums</button>
             </li>
             <li>
               <button className="dropdown-item" onClick={() => scrollToSection('section-monuments')}>Sites &amp; Monuments</button>
             </li>
             <li>
-              <button className="dropdown-item" onClick={onReplicaClick || (() => scrollToSection('section-publications'))}>Publications &amp; Replicas</button>
+              <button className="dropdown-item" onClick={onReplicaClick || (() => { if (onViewChange) onViewChange('shop'); setMenuOpen(false); })}>Publications &amp; Replicas</button>
             </li>
             <li>
               <button className="dropdown-item" onClick={() => scrollToSection('section-publications')}>Galleries</button>
