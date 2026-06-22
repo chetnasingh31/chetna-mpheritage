@@ -158,8 +158,19 @@ export default function App() {
     document.body.style.overflow = '';
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('mp_heritage_admin');
+  const handleLogout = async () => {
+    const token = sessionStorage.getItem('mp_heritage_admin_token');
+    if (token) {
+      try {
+        await fetch('http://localhost:5000/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } catch (e) {
+        console.error('Logout API failed', e);
+      }
+    }
+    sessionStorage.clear();
     setIsAdminAuthenticated(false);
     setCurrentView('home');
     document.body.style.overflow = '';

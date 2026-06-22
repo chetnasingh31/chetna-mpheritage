@@ -69,7 +69,6 @@ const SanchiTorana = ({ size = 80, style = {} }) => (
     <path d="M 20 90 L 80 90" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
   </svg>
 );
-
 export default function LoginPage({ onClose, onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,38 +76,66 @@ export default function LoginPage({ onClose, onSuccess }) {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [generatedCode, setGeneratedCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const API_BASE = 'http://localhost:5000/api';
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
 
-    const validEmails = SEEDED_ROLES.map(r => r.email.toLowerCase());
-    const inputEmail = email.toLowerCase().trim();
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password })
+      });
 
-    const isDemoLogin = validEmails.includes(inputEmail) && password === 'demo123';
-    const isLegacyLogin = inputEmail === 'admin' && password === 'admin';
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
 
-    if (isDemoLogin || isLegacyLogin) {
-      // Generate a secure random 6-digit code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedCode(code);
+      setGeneratedCode(data.otpCode);
       setShowVerification(true);
-    } else {
-      setError('Invalid administrative credentials or role unauthorized.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleVerify = (e) => {
+  const handleVerify = async (e) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
 
-    if (verificationCode.trim() === generatedCode) {
-      const inputEmail = email.toLowerCase().trim();
+    try {
+      const res = await fetch(`${API_BASE}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), otpCode: verificationCode.trim() })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Verification failed');
+      }
+
+      // Store in session storage
       sessionStorage.setItem('mp_heritage_admin', 'true');
-      sessionStorage.setItem('mp_heritage_user_role', inputEmail);
+      sessionStorage.setItem('mp_heritage_admin_token', data.token);
+      sessionStorage.setItem('mp_heritage_user_role', data.user.role);
+      sessionStorage.setItem('mp_heritage_user_email', data.user.email);
+      sessionStorage.setItem('mp_heritage_user_name', data.user.name);
+      sessionStorage.setItem('mp_heritage_user_institution', data.user.institution || '');
+
       onSuccess();
-    } else {
-      setError('Incorrect verification code. Please try again.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -117,8 +144,8 @@ export default function LoginPage({ onClose, onSuccess }) {
       style={{
         minHeight: '100vh',
         width: '100vw',
-        backgroundColor: '#F5EFE6',
-        backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(240, 230, 215, 0.9) 100%)',
+        backgroundColor: '#FCFAF6',
+        backgroundImage: 'radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, rgba(245, 240, 232, 0.9) 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -136,7 +163,7 @@ export default function LoginPage({ onClose, onSuccess }) {
           bottom: '-60px', 
           right: '-40px', 
           color: 'var(--gold)', 
-          opacity: 0.05, 
+          opacity: 0.06, 
           zIndex: 0,
           pointerEvents: 'none'
         }} 
@@ -154,7 +181,7 @@ export default function LoginPage({ onClose, onSuccess }) {
           top: '-80px',
           left: '-80px',
           color: 'var(--gold)',
-          opacity: 0.04,
+          opacity: 0.05,
           zIndex: 0,
           pointerEvents: 'none'
         }}
@@ -181,7 +208,7 @@ export default function LoginPage({ onClose, onSuccess }) {
           position: 'absolute',
           top: '30px',
           left: '30px',
-          background: '#FDFBF7',
+          background: '#FFFFFF',
           border: '1px solid rgba(184, 92, 56, 0.25)',
           borderRadius: 'var(--radius-sm)',
           padding: '8px 16px',
@@ -203,7 +230,7 @@ export default function LoginPage({ onClose, onSuccess }) {
           e.currentTarget.style.transform = 'translateX(-2px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = '#FDFBF7';
+          e.currentTarget.style.background = '#FFFFFF';
           e.currentTarget.style.transform = 'none';
         }}
       >
@@ -216,10 +243,10 @@ export default function LoginPage({ onClose, onSuccess }) {
         style={{
           width: '100%',
           maxWidth: '480px',
-          background: '#FCFAF5',
-          border: '1px solid rgba(184, 92, 56, 0.25)',
-          borderRadius: '4px',
-          boxShadow: 'inset 0 0 60px rgba(184, 92, 56, 0.03), 0 20px 50px rgba(13, 11, 8, 0.05)',
+          background: '#FFFFFF',
+          border: '1px solid rgba(184, 92, 56, 0.18)',
+          borderRadius: '6px',
+          boxShadow: '0 16px 40px rgba(184, 92, 56, 0.05)',
           padding: '48px 40px',
           boxSizing: 'border-box',
           textAlign: 'center',
@@ -251,11 +278,10 @@ export default function LoginPage({ onClose, onSuccess }) {
             onSubmit={handleSubmit} 
             style={{ 
               textAlign: 'left',
-              border: '1px solid rgba(184, 92, 56, 0.14)',
+              border: '1px solid rgba(184, 92, 56, 0.12)',
               borderRadius: '4px',
               padding: '24px 20px',
-              background: 'rgba(255, 255, 255, 0.45)',
-              boxShadow: '0 6px 18px rgba(184, 92, 56, 0.02)',
+              background: '#FCFAF7',
               boxSizing: 'border-box'
             }}
           >
@@ -276,11 +302,11 @@ export default function LoginPage({ onClose, onSuccess }) {
                 style={{
                   width: '100%',
                   padding: '12px 14px',
-                  border: '1px solid rgba(184, 92, 56, 0.25)',
-                  borderRadius: '2px',
+                  border: '1px solid rgba(184, 92, 56, 0.22)',
+                  borderRadius: '4px',
                   fontSize: '13px',
-                  background: '#FCFAF5',
-                  color: '#111111',
+                  background: '#FFFFFF',
+                  color: '#2E2A27',
                   outline: 'none',
                   boxSizing: 'border-box',
                   fontFamily: "'Inter', sans-serif"
@@ -305,11 +331,11 @@ export default function LoginPage({ onClose, onSuccess }) {
                 style={{
                   width: '100%',
                   padding: '12px 14px',
-                  border: '1px solid rgba(184, 92, 56, 0.25)',
-                  borderRadius: '2px',
+                  border: '1px solid rgba(184, 92, 56, 0.22)',
+                  borderRadius: '4px',
                   fontSize: '13px',
-                  background: '#FCFAF5',
-                  color: '#111111',
+                  background: '#FFFFFF',
+                  color: '#2E2A27',
                   outline: 'none',
                   boxSizing: 'border-box',
                   fontFamily: "'Inter', sans-serif"
@@ -325,32 +351,33 @@ export default function LoginPage({ onClose, onSuccess }) {
 
             <button 
               type="submit" 
+              disabled={isSubmitting}
               style={{
                 width: '100%',
                 padding: '12px',
                 background: 'linear-gradient(135deg, var(--gold), #9A4B29)',
                 color: '#ffffff',
                 border: 'none',
-                borderRadius: '2px',
+                borderRadius: '4px',
                 fontSize: '11px',
                 fontFamily: "'Montserrat', sans-serif",
                 fontWeight: '700',
                 textTransform: 'uppercase',
                 letterSpacing: '1px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(184,92,56,0.2)',
+                boxShadow: '0 4px 15px rgba(184,92,56,0.15)',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(184,92,56,0.3)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(184,92,56,0.2)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'none';
-                e.currentTarget.style.boxShadow = '0 4px 15px rgba(184,92,56,0.2)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(184,92,56,0.15)';
               }}
             >
-              Sign in
+              {isSubmitting ? 'Processing...' : 'Sign in'}
             </button>
           </form>
         ) : (
@@ -358,17 +385,16 @@ export default function LoginPage({ onClose, onSuccess }) {
             onSubmit={handleVerify} 
             style={{ 
               textAlign: 'left',
-              border: '1px solid rgba(184, 92, 56, 0.14)',
+              border: '1px solid rgba(184, 92, 56, 0.12)',
               borderRadius: '4px',
               padding: '24px 20px',
-              background: 'rgba(255, 255, 255, 0.45)',
-              boxShadow: '0 6px 18px rgba(184, 92, 56, 0.02)',
+              background: '#FCFAF7',
               boxSizing: 'border-box'
             }}
           >
-            <div style={{ marginBottom: '16px', background: 'rgba(184, 92, 56, 0.06)', border: '1px dashed rgba(184, 92, 56, 0.3)', borderRadius: '4px', padding: '12px 14px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+            <div style={{ marginBottom: '16px', background: 'rgba(184, 92, 56, 0.04)', border: '1px dashed rgba(184, 92, 56, 0.25)', borderRadius: '4px', padding: '12px 14px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
               A security verification code has been generated. For demonstration, please enter the following code to proceed:
-              <div style={{ fontSize: '18px', fontWeight: 'bold', letterSpacing: '2px', color: 'var(--gold)', marginTop: '8px', textAlign: 'center', fontFamily: 'monospace' }}>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '3px', color: 'var(--gold)', marginTop: '8px', textAlign: 'center', fontFamily: 'monospace' }}>
                 {generatedCode}
               </div>
             </div>
@@ -391,12 +417,12 @@ export default function LoginPage({ onClose, onSuccess }) {
                   width: '100%',
                   padding: '12px 14px',
                   border: '1px solid rgba(184, 92, 56, 0.25)',
-                  borderRadius: '2px',
-                  fontSize: '16px',
-                  letterSpacing: '4px',
+                  borderRadius: '4px',
+                  fontSize: '18px',
+                  letterSpacing: '6px',
                   textAlign: 'center',
-                  background: '#FCFAF5',
-                  color: '#111111',
+                  background: '#FFFFFF',
+                  color: '#2E2A27',
                   outline: 'none',
                   boxSizing: 'border-box',
                   fontFamily: "monospace"
@@ -412,30 +438,31 @@ export default function LoginPage({ onClose, onSuccess }) {
 
             <button 
               type="submit" 
+              disabled={isSubmitting}
               style={{
                 width: '100%',
                 padding: '12px',
                 background: 'linear-gradient(135deg, var(--gold), #9A4B29)',
                 color: '#ffffff',
                 border: 'none',
-                borderRadius: '2px',
+                borderRadius: '4px',
                 fontSize: '11px',
                 fontFamily: "'Montserrat', sans-serif",
                 fontWeight: '700',
                 textTransform: 'uppercase',
                 letterSpacing: '1px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(184,92,56,0.2)',
+                boxShadow: '0 4px 15px rgba(184,92,56,0.15)',
                 transition: 'all 0.2s ease',
                 marginBottom: '10px'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(184,92,56,0.3)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(184,92,56,0.2)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'none';
-                e.currentTarget.style.boxShadow = '0 4px 15px rgba(184,92,56,0.2)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(184,92,56,0.15)';
               }}
             >
               Verify &amp; Sign In
@@ -453,8 +480,8 @@ export default function LoginPage({ onClose, onSuccess }) {
                 padding: '10px',
                 background: 'transparent',
                 color: 'var(--text-dim)',
-                border: '1px solid rgba(184, 92, 56, 0.15)',
-                borderRadius: '2px',
+                border: '1px solid rgba(184, 92, 56, 0.2)',
+                borderRadius: '4px',
                 fontSize: '10px',
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: '600',
@@ -526,7 +553,7 @@ export default function LoginPage({ onClose, onSuccess }) {
                     }}
                   >
                     <span style={{ fontWeight: '600', color: 'var(--gold)' }}>{role.name}</span>
-                    <span style={{ fontSize: '11px', color: '#111111', fontWeight: 500 }}>{role.email}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>{role.email}</span>
                   </button>
                 ))}
               </div>

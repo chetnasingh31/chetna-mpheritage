@@ -1,88 +1,341 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const SEEDED_ROLES = [
-  { name: 'System Administrator', email: 'superadmin@mp.gov.in', code: 'SA' },
-  { name: 'Directorate Admin', email: 'diradmin@mp.gov.in', code: 'DA' },
-  { name: 'A. Officer', email: 'officer@mp.gov.in', code: 'AO' },
-  { name: 'Museum Admin (Bhopal)', email: 'museum@mp.gov.in', code: 'MA' },
-  { name: 'Site Incharge (Bhimbetka)', email: 'site@mp.gov.in', code: 'SI' },
-  { name: 'Institute Admin (Wakankar)', email: 'institute@mp.gov.in', code: 'IA' },
-  { name: 'Trust Admin', email: 'trust@mp.gov.in', code: 'TA' }
-];
+const API_BASE = 'http://localhost:5000/api';
+
+const CornerOrnament = ({ style }) => (
+  <svg 
+    width="16" 
+    height="16" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg" 
+    style={{ position: 'absolute', color: 'var(--gold)', opacity: 0.8, pointerEvents: 'none', ...style }}
+  >
+    <path d="M 2 24 L 2 2 L 24 2" stroke="currentColor" strokeWidth="2" fill="none" />
+    <path d="M 6 24 L 6 6 L 24 6" stroke="currentColor" strokeWidth="1" fill="none" />
+    <circle cx="11" cy="11" r="2.5" fill="currentColor" />
+  </svg>
+);
 
 export default function AdminDashboard({ notices, onClose, onNoticeUpdate, onLogout }) {
+  // Retrieve user session info
+  const token = sessionStorage.getItem('mp_heritage_admin_token');
+  const role = sessionStorage.getItem('mp_heritage_user_role') || 'SYSTEM_ADMIN';
+  const userEmail = sessionStorage.getItem('mp_heritage_user_email') || 'superadmin@mp.gov.in';
+  const userName = sessionStorage.getItem('mp_heritage_user_name') || 'Administrator';
+  const userInstitution = sessionStorage.getItem('mp_heritage_user_institution') || '';
+
+  // Tab & UI state
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [category, setCategory] = useState('Tender');
-  const [title, setTitle] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Retrieve user session info
-  const userEmail = sessionStorage.getItem('mp_heritage_user_role') || 'superadmin@mp.gov.in';
-  const roleMatch = SEEDED_ROLES.find(r => r.email.toLowerCase() === userEmail.toLowerCase());
-  const activeRoleName = roleMatch ? roleMatch.name : (userEmail === 'admin' ? 'System Administrator' : 'Staff Officer');
-  const activeEmailText = roleMatch ? roleMatch.email : (userEmail === 'admin' ? 'superadmin@mp.gov.in' : userEmail);
+  // Dynamic API states
+  const [widgets, setWidgets] = useState({});
+  const [contentList, setContentList] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [featureFlags, setFeatureFlags] = useState([]);
+  const [usersList, setUsersList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Simulated Audit Logs
-  const [auditLogs] = useState([
-    { time: '16:32:10', user: 'superadmin@mp.gov.in', action: 'Created new notice announcement', target: 'Conservation works at Bagh Caves' },
-    { time: '15:10:45', user: 'museum@mp.gov.in', action: 'Updated visiting hours list', target: 'Bhopal Museum' },
-    { time: '14:24:19', user: 'site@mp.gov.in', action: 'Approved booking request #B-88392', target: 'Bhimbetka Ticket Desk' },
-    { time: '11:05:02', user: 'diradmin@mp.gov.in', action: 'Assigned permissions change', target: 'A. Officer role clearance' },
-  ]);
+  // Forms
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [contentType, setContentType] = useState('notice');
+  const [metaDetails, setMetaDetails] = useState(''); // JSON metadata string
+  const [editorialComment, setEditorialComment] = useState('');
 
-  // Simulated Feature Flags
-  const [flags, setFlags] = useState({
-    eTicketBooking: true,
-    museumAudioGuide: false,
-    virtualTour3D: true,
-    noticeScheduler: false,
-  });
+  // Admin user form
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState('MUSEUM_ADMIN');
+  const [newUserInstitution, setNewUserInstitution] = useState('');
 
-  const getFormattedDate = () => {
-    const options = { day: 'numeric', month: 'long', year: 'numeric' };
-    return new Date().toLocaleDateString('en-US', options);
+  // Fetch Dashboard Data
+  const fetchData = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      
+      // Fetch widgets
+      const widgetsRes = await fetch(`${API_BASE}/dashboard/widgets`, { headers });
+      if (widgetsRes.ok) setWidgets(await widgetsRes.json());
+
+      // Fetch content
+      const contentRes = await fetch(`${API_BASE}/content`, { headers });
+      if (contentRes.ok) setContentList(await contentRes.json());
+
+      // Fetch notifications
+      const notificationsRes = await fetch(`${API_BASE}/dashboard/notifications`, { headers });
+      if (notificationsRes.ok) setNotifications(await notificationsRes.json());
+
+      // SYSTEM_ADMIN only queries
+      if (role === 'SYSTEM_ADMIN') {
+        const logsRes = await fetch(`${API_BASE}/admin/logs`, { headers });
+        if (logsRes.ok) setAuditLogs(await logsRes.json());
+
+        const flagsRes = await fetch(`${API_BASE}/admin/flags`, { headers });
+        if (flagsRes.ok) setFeatureFlags(await flagsRes.json());
+
+        const usersRes = await fetch(`${API_BASE}/admin/users`, { headers });
+        if (usersRes.ok) setUsersList(await usersRes.json());
+      }
+    } catch (e) {
+      console.error('Failed to retrieve dashboard details', e);
+    } finally {
+      setLoading(false);
+    }
   };
-  
-  const [date, setDate] = useState(getFormattedDate());
 
-  const handlePublish = async (e) => {
+  useEffect(() => {
+    fetchData();
+  }, [role]);
+
+  // Handle Mark Notifications as Read
+  const handleMarkNotificationsRead = async () => {
+    try {
+      await fetch(`${API_BASE}/dashboard/notifications/read`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Create content submit handler
+  const handleCreateContent = async (e, submitDirectly = false) => {
     e.preventDefault();
-    if (!title.trim() || !date.trim()) return;
+    if (!title.trim() || !description.trim()) return;
 
-    setIsSubmitting(true);
-    const newNotice = { category, title: title.trim(), date: date.trim() };
+    setSubmitting(true);
+    let parsedMetadata = {};
+    try {
+      if (metaDetails) parsedMetadata = JSON.parse(metaDetails);
+    } catch (e) {
+      alert('Metadata must be a valid JSON string');
+      setSubmitting(false);
+      return;
+    }
 
-    await new Promise(resolve => setTimeout(resolve, 400));
+    try {
+      const res = await fetch(`${API_BASE}/content`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          contentType,
+          metadata: parsedMetadata,
+          institution: userInstitution || 'State Museum, Bhopal',
+          submit: submitDirectly
+        })
+      });
 
-    const localNotices = JSON.parse(localStorage.getItem('mp_heritage_notices') || '[]');
-    const nextId = localNotices.length > 0 ? Math.max(...localNotices.map(n => n.id || 0)) + 1 : 1;
-    const noticeToSave = { id: nextId, ...newNotice, createdAt: new Date() };
-    
-    localNotices.unshift(noticeToSave);
-    localStorage.setItem('mp_heritage_notices', JSON.stringify(localNotices));
-    
-    setTitle('');
-    setDate(getFormattedDate());
-    onNoticeUpdate();
-    setIsSubmitting(false);
-    alert('Announcement published successfully.');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Creation failed');
+      }
+
+      setTitle('');
+      setDescription('');
+      setMetaDetails('');
+      alert(submitDirectly ? 'Content submitted for review!' : 'Draft saved!');
+      fetchData();
+      if (onNoticeUpdate) onNoticeUpdate();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDelete = async (id, mongoId) => {
-    if (!window.confirm('Are you sure you want to delete this notice?')) return;
-    const targetId = mongoId || id;
-    await new Promise(resolve => setTimeout(resolve, 300));
+  // Workflow status updates
+  const handleWorkflowTransition = async (contentId, action) => {
+    try {
+      const res = await fetch(`${API_BASE}/content/${contentId}/workflow`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ action, comments: editorialComment })
+      });
 
-    let localNotices = JSON.parse(localStorage.getItem('mp_heritage_notices') || '[]');
-    localNotices = localNotices.filter((n) => n.id !== id && n._id !== targetId);
-    localStorage.setItem('mp_heritage_notices', JSON.stringify(localNotices));
-    onNoticeUpdate();
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Workflow transition failed');
+      }
+
+      setEditorialComment('');
+      alert(`Workflow transition "${action}" executed successfully!`);
+      fetchData();
+      if (onNoticeUpdate) onNoticeUpdate();
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
-  const toggleFlag = (flagName) => {
-    setFlags(prev => ({ ...prev, [flagName]: !prev[flagName] }));
+  // Delete Content handler
+  const handleDeleteContent = async (contentId) => {
+    if (!window.confirm('Are you sure you want to delete this content?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/content/${contentId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Deletion failed');
+      }
+
+      alert('Content deleted successfully.');
+      fetchData();
+      if (onNoticeUpdate) onNoticeUpdate();
+    } catch (err) {
+      alert(err.message);
+    }
   };
+
+  // Admin: Toggle Feature flag
+  const handleToggleFlag = async (key, enabled) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/flags`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ key, enabled })
+      });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Admin: Create User
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    if (!newUserName || !newUserEmail || !newUserPassword) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newUserName,
+          email: newUserEmail,
+          password: newUserPassword,
+          role: newUserRole,
+          institution: newUserInstitution || null
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Creation failed');
+      }
+
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserInstitution('');
+      alert('Administrative account created successfully.');
+      fetchData();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // Admin: Delete User
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Delete this user?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        alert('User removed.');
+        fetchData();
+      }
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  // Dynamic Menus per Role
+  const getMenus = () => {
+    switch (role) {
+      case 'SYSTEM_ADMIN':
+        return [
+          { id: 'dashboard', name: 'Dashboard' },
+          { id: 'users', name: 'Users' },
+          { id: 'flags', name: 'Feature Flags' },
+          { id: 'audit', name: 'Audit Logs' },
+          { id: 'settings', name: 'System Settings' }
+        ];
+      case 'DIRECTORATE_ADMIN':
+        return [
+          { id: 'dashboard', name: 'Dashboard' },
+          { id: 'workspace', name: 'Content Workspace' },
+          { id: 'approvals', name: 'Approvals' },
+          { id: 'reports', name: 'Reports' }
+        ];
+      case 'DIRECTORATE_OFFICER':
+        return [
+          { id: 'dashboard', name: 'Dashboard' },
+          { id: 'workspace', name: 'Content Workspace' },
+          { id: 'approvals', name: 'Approvals' }
+        ];
+      case 'MUSEUM_ADMIN':
+        return [
+          { id: 'dashboard', name: 'Dashboard' },
+          { id: 'museum', name: 'My Museum' },
+          { id: 'workspace', name: 'Content Creator' }
+        ];
+      case 'SITE_INCHARGE':
+        return [
+          { id: 'dashboard', name: 'Dashboard' },
+          { id: 'site', name: 'My Site' },
+          { id: 'workspace', name: 'Content Creator' }
+        ];
+      case 'INSTITUTE_ADMIN':
+        return [
+          { id: 'dashboard', name: 'Dashboard' },
+          { id: 'institute', name: 'Institute Workspace' },
+          { id: 'workspace', name: 'Content Creator' }
+        ];
+      case 'TRUST_ADMIN':
+        return [
+          { id: 'dashboard', name: 'Dashboard' },
+          { id: 'trust', name: 'Trust Projects' },
+          { id: 'workspace', name: 'Content Creator' }
+        ];
+      default:
+        return [{ id: 'dashboard', name: 'Dashboard' }];
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100vw', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FCFAF6', color: 'var(--gold)' }}>
+        <h2 style={{ fontFamily: 'monospace' }}>Authenticating Session &amp; Loading RBAC Console...</h2>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -90,705 +343,555 @@ export default function AdminDashboard({ notices, onClose, onNoticeUpdate, onLog
         display: 'flex',
         minHeight: '100vh',
         width: '100vw',
-        background: '#FAF6F0',
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z' stroke='rgba%28184, 92, 56, 0.015%29' stroke-width='1.2' fill='none'/%3E%3C/svg%3E")`,
+        backgroundColor: '#FCFAF6',
+        backgroundImage: 'radial-gradient(circle at center, rgba(255, 255, 255, 0.5) 0%, rgba(245, 240, 232, 0.7) 100%)',
         color: '#2E2A27',
-        fontFamily: "'Inter', sans-sans-serif",
+        fontFamily: "'Inter', sans-serif",
         overflowX: 'hidden'
       }}
     >
-      {/* Dynamic styles */}
-      <style>{`
-        ::-webkit-scrollbar {
-          width: 6px;
-          height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-          background: rgba(184, 92, 56, 0.05);
-        }
-        ::-webkit-scrollbar-thumb {
-          background: rgba(184, 92, 56, 0.25);
-          border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: rgba(184, 92, 56, 0.45);
-        }
-        @keyframes pulse-green {
-          0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); }
-          70% { box-shadow: 0 0 0 6px rgba(46, 125, 50, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
-        }
-        .pulsing-dot-green {
-          animation: pulse-green 2s infinite;
-        }
-      `}</style>
-
-      {/* ==========================================
-          SIDEBAR NAVIGATION (FORMAL HERITAGE CREAM)
-      ========================================== */}
+      {/* Sidebar Navigation */}
       <aside 
         style={{
           width: isSidebarOpen ? '260px' : '0px',
-          background: '#FCFAF7',
-          color: '#2E2A27',
+          background: '#FFFFFF',
           display: 'flex',
           flexDirection: 'column',
-          borderRight: isSidebarOpen ? '1px solid rgba(184, 92, 56, 0.2)' : 'none',
+          borderRight: isSidebarOpen ? '1px solid rgba(184, 92, 56, 0.12)' : 'none',
           flexShrink: 0,
           overflow: 'hidden',
-          transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-right 0.3s ease'
+          transition: 'width 0.3s ease'
         }}
       >
-        {/* Brand Header */}
-        <div 
-          style={{
-            padding: '24px 20px',
-            borderBottom: '1px solid rgba(184, 92, 56, 0.12)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #B85C38, #8c4125)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 'bold',
-            color: '#FFFFFF',
-            fontSize: '15px',
-            fontFamily: "'Montserrat', sans-serif",
-            boxShadow: '0 4px 8px rgba(184, 92, 56, 0.15)'
-          }}>
+        <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #B85C38, #8c4125)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#FFFFFF' }}>
             व
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <h1 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: '#B85C38', letterSpacing: '0.8px', fontFamily: "'Montserrat', sans-serif" }}>
+            <h1 style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: 'var(--gold)', letterSpacing: '0.8px' }}>
               MP HERITAGE
             </h1>
-            <span style={{ fontSize: '9px', color: '#8c8070', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-              Government of MP
+            <span style={{ fontSize: '9px', color: '#8c8070', fontWeight: 600, textTransform: 'uppercase' }}>
+              Scope: {role.replace('_', ' ')}
             </span>
           </div>
         </div>
 
-        {/* User Badge Info */}
-        <div 
-          style={{
-            padding: '18px 20px',
-            background: 'rgba(184, 92, 56, 0.03)',
-            borderBottom: '1px solid rgba(184, 92, 56, 0.12)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '6px',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="pulsing-dot-green" style={{ background: '#2e7d32', width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '9px', letterSpacing: '0.8px', color: '#2e7d32', fontWeight: 700, textTransform: 'uppercase', fontFamily: "'Montserrat', sans-serif" }}>
-              Active Database Session
-            </span>
+        {/* User Info */}
+        <div style={{ padding: '18px 20px', background: 'rgba(184, 92, 56, 0.03)', borderBottom: '1px solid rgba(184, 92, 56, 0.12)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span style={{ background: '#10B981', width: '8px', height: '8px', borderRadius: '50%' }}></span>
+            <span style={{ fontSize: '9px', color: '#10B981', fontWeight: 700 }}>VERIFIED 2FA SESSION</span>
           </div>
-          <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#2E2A27', marginTop: '2px', fontFamily: "'Montserrat', sans-serif" }}>
-            {activeRoleName}
-          </div>
-          <div style={{ fontSize: '11px', color: '#8c8070', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {activeEmailText}
-          </div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#2E2A27' }}>{userName}</div>
+          <div style={{ fontSize: '11px', color: '#6E6558', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userEmail}</div>
+          {userInstitution && (
+            <div style={{ fontSize: '11px', color: 'var(--gold)', fontWeight: 600, marginTop: '4px' }}>
+              {userInstitution}
+            </div>
+          )}
         </div>
 
-        {/* Menu Links */}
-        <nav 
-          style={{
-            padding: '24px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '24px',
-            flexGrow: 1,
-            overflowY: 'auto'
-          }}
-        >
+        <nav style={{ padding: '24px 14px', display: 'flex', flexDirection: 'column', gap: '20px', flexGrow: 1 }}>
           <div>
-            <span style={{ fontSize: '10px', textTransform: 'uppercase', color: '#8c8070', fontWeight: 700, letterSpacing: '1px', paddingLeft: '8px', display: 'block', marginBottom: '8px', fontFamily: "'Montserrat', sans-serif" }}>
-              General Desk
+            <span style={{ fontSize: '10px', textTransform: 'uppercase', color: '#8c8070', fontWeight: 700, paddingLeft: '8px', display: 'block', marginBottom: '8px' }}>
+              Operations
             </span>
             <ul style={{ listStyleType: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <li>
-                <button 
-                  onClick={() => setActiveTab('dashboard')}
-                  style={{
-                    width: '100%',
-                    background: activeTab === 'dashboard' ? 'rgba(184, 92, 56, 0.06)' : 'transparent',
-                    border: 'none',
-                    borderLeft: activeTab === 'dashboard' ? '3px solid #B85C38' : '3px solid transparent',
-                    borderRadius: '0 4px 4px 0',
-                    padding: '10px 12px',
-                    color: activeTab === 'dashboard' ? '#B85C38' : '#6E6558',
-                    fontSize: '13px',
-                    fontWeight: activeTab === 'dashboard' ? 700 : 500,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontFamily: "'Montserrat', sans-serif"
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" />
-                  </svg>
-                  Dashboard
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <span style={{ fontSize: '10px', textTransform: 'uppercase', color: '#8c8070', fontWeight: 700, letterSpacing: '1px', paddingLeft: '8px', display: 'block', marginBottom: '8px', fontFamily: "'Montserrat', sans-serif" }}>
-              Directorate Operations
-            </span>
-            <ul style={{ listStyleType: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <li>
-                <button 
-                  onClick={() => setActiveTab('content')}
-                  style={{
-                    width: '100%',
-                    background: activeTab === 'content' ? 'rgba(184, 92, 56, 0.06)' : 'transparent',
-                    border: 'none',
-                    borderLeft: activeTab === 'content' ? '3px solid #B85C38' : '3px solid transparent',
-                    borderRadius: '0 4px 4px 0',
-                    padding: '10px 12px',
-                    color: activeTab === 'content' ? '#B85C38' : '#6E6558',
-                    fontSize: '13px',
-                    fontWeight: activeTab === 'content' ? 700 : 500,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontFamily: "'Montserrat', sans-serif"
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
-                  </svg>
-                  Content workspace
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => setActiveTab('approvals')}
-                  style={{
-                    width: '100%',
-                    background: activeTab === 'approvals' ? 'rgba(184, 92, 56, 0.06)' : 'transparent',
-                    border: 'none',
-                    borderLeft: activeTab === 'approvals' ? '3px solid #B85C38' : '3px solid transparent',
-                    borderRadius: '0 4px 4px 0',
-                    padding: '10px 12px',
-                    color: activeTab === 'approvals' ? '#B85C38' : '#6E6558',
-                    fontSize: '13px',
-                    fontWeight: activeTab === 'approvals' ? 700 : 500,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontFamily: "'Montserrat', sans-serif"
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                  Approvals
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <span style={{ fontSize: '10px', textTransform: 'uppercase', color: '#8c8070', fontWeight: 700, letterSpacing: '1px', paddingLeft: '8px', display: 'block', marginBottom: '8px', fontFamily: "'Montserrat', sans-serif" }}>
-              Administration
-            </span>
-            <ul style={{ listStyleType: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <li>
-                <button 
-                  onClick={() => setActiveTab('users')}
-                  style={{
-                    width: '100%',
-                    background: activeTab === 'users' ? 'rgba(184, 92, 56, 0.06)' : 'transparent',
-                    border: 'none',
-                    borderLeft: activeTab === 'users' ? '3px solid #B85C38' : '3px solid transparent',
-                    borderRadius: '0 4px 4px 0',
-                    padding: '10px 12px',
-                    color: activeTab === 'users' ? '#B85C38' : '#6E6558',
-                    fontSize: '13px',
-                    fontWeight: activeTab === 'users' ? 700 : 500,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontFamily: "'Montserrat', sans-serif"
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                  Users
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => setActiveTab('roles')}
-                  style={{
-                    width: '100%',
-                    background: activeTab === 'roles' ? 'rgba(184, 92, 56, 0.06)' : 'transparent',
-                    border: 'none',
-                    borderLeft: activeTab === 'roles' ? '3px solid #B85C38' : '3px solid transparent',
-                    borderRadius: '0 4px 4px 0',
-                    padding: '10px 12px',
-                    color: activeTab === 'roles' ? '#B85C38' : '#6E6558',
-                    fontSize: '13px',
-                    fontWeight: activeTab === 'roles' ? 700 : 500,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontFamily: "'Montserrat', sans-serif"
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  </svg>
-                  Roles &amp; permissions
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => setActiveTab('flags')}
-                  style={{
-                    width: '100%',
-                    background: activeTab === 'flags' ? 'rgba(184, 92, 56, 0.06)' : 'transparent',
-                    border: 'none',
-                    borderLeft: activeTab === 'flags' ? '3px solid #B85C38' : '3px solid transparent',
-                    borderRadius: '0 4px 4px 0',
-                    padding: '10px 12px',
-                    color: activeTab === 'flags' ? '#B85C38' : '#6E6558',
-                    fontSize: '13px',
-                    fontWeight: activeTab === 'flags' ? 700 : 500,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontFamily: "'Montserrat', sans-serif"
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="9" x2="15" y2="15" /><line x1="15" y1="9" x2="9" y2="15" />
-                  </svg>
-                  Feature flags
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => setActiveTab('audit')}
-                  style={{
-                    width: '100%',
-                    background: activeTab === 'audit' ? 'rgba(184, 92, 56, 0.06)' : 'transparent',
-                    border: 'none',
-                    borderLeft: activeTab === 'audit' ? '3px solid #B85C38' : '3px solid transparent',
-                    borderRadius: '0 4px 4px 0',
-                    padding: '10px 12px',
-                    color: activeTab === 'audit' ? '#B85C38' : '#6E6558',
-                    fontSize: '13px',
-                    fontWeight: activeTab === 'audit' ? 700 : 500,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontFamily: "'Montserrat', sans-serif"
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                  </svg>
-                  Audit log
-                </button>
-              </li>
+              {getMenus().map((menu) => (
+                <li key={menu.id}>
+                  <button 
+                    onClick={() => setActiveTab(menu.id)}
+                    style={{
+                      width: '100%',
+                      background: activeTab === menu.id ? 'rgba(184, 92, 56, 0.05)' : 'transparent',
+                      border: 'none',
+                      borderLeft: activeTab === menu.id ? '3px solid var(--gold)' : '3px solid transparent',
+                      borderRadius: '0 4px 4px 0',
+                      padding: '10px 12px',
+                      color: activeTab === menu.id ? 'var(--gold)' : '#6E6558',
+                      fontSize: '13px',
+                      fontWeight: activeTab === menu.id ? 700 : 500,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {menu.name}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
         </nav>
       </aside>
 
-      {/* ==========================================
-          MAIN CONTENT WORKSPACE (FORMAL WHITE)
-      ========================================== */}
-      <main 
-        style={{
-          flexGrow: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          overflowY: 'auto',
-          position: 'relative'
-        }}
-      >
-        {/* Top Header Bar */}
-        <header 
-          style={{
-            padding: '16px 32px',
-            borderBottom: '1px solid rgba(184, 92, 56, 0.15)',
-            background: '#FFFFFF',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            position: 'sticky',
-            top: 0,
-            zIndex: 10
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#6E6558' }}>
-            <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '6px',
-                color: '#6E6558',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: '8px',
-                borderRadius: '4px',
-                transition: 'background 0.15s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(184, 92, 56, 0.05)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-              aria-label="Toggle sidebar"
-            >
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                {isSidebarOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
+      {/* Main Workspace */}
+      <main style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto' }}>
+        <header style={{ padding: '16px 32px', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', background: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6E6558', marginRight: '8px', fontSize: '18px' }}>
+              ☰
             </button>
-            <span style={{ fontWeight: 700, fontFamily: "'Montserrat', sans-serif", letterSpacing: '0.8px', color: '#B85C38' }}>Portal Console</span>
+            <span style={{ fontWeight: 700, color: 'var(--gold)' }}>RBAC Portal</span>
             <span style={{ color: 'rgba(184, 92, 56, 0.3)' }}>/</span>
-            <span style={{ fontWeight: 600, textTransform: 'capitalize', color: '#2E2A27' }}>
-              {activeTab === 'dashboard' ? 'General Dashboard' : activeTab}
-            </span>
+            <span style={{ fontWeight: 600, textTransform: 'capitalize', color: '#2E2A27' }}>{activeTab}</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button 
-              onClick={onClose}
-              style={{
-                background: 'transparent',
-                border: '1px solid rgba(184, 92, 56, 0.25)',
-                borderRadius: '2px',
-                padding: '6px 14px',
-                color: '#B85C38',
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontSize: '11px',
-                letterSpacing: '0.8px',
-                textTransform: 'uppercase',
-                fontFamily: "'Montserrat', sans-serif",
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(184, 92, 56, 0.05)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              ← Exit Console
-            </button>
+            {/* Notification indicator */}
+            {notifications.length > 0 && (
+              <button 
+                onClick={handleMarkNotificationsRead}
+                style={{ background: 'rgba(184, 92, 56, 0.05)', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', color: 'var(--gold)', cursor: 'pointer' }}
+                title="Mark all notifications as read"
+              >
+                🔔 {notifications.filter(n => !n.read).length} Unread
+              </button>
+            )}
 
-            <button 
-              onClick={onLogout}
-              style={{
-                background: '#B85C38',
-                border: 'none',
-                borderRadius: '2px',
-                padding: '7px 16px',
-                color: '#FFFFFF',
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontSize: '11px',
-                letterSpacing: '0.8px',
-                textTransform: 'uppercase',
-                fontFamily: "'Montserrat', sans-serif",
-                boxShadow: '0 4px 8px rgba(184, 92, 56, 0.2)',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#8c4125';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#B85C38';
-              }}
-            >
-              Log Out Session
+            <button onClick={onClose} style={{ background: 'transparent', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', padding: '6px 14px', color: 'var(--gold)', fontWeight: 700, cursor: 'pointer', fontSize: '11px', transition: 'all 0.2s' }}>
+              ← Portal Homepage
+            </button>
+            <button onClick={onLogout} style={{ background: 'linear-gradient(135deg, var(--gold), #9A4B29)', border: 'none', borderRadius: '4px', padding: '7px 16px', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer', fontSize: '11px', boxShadow: '0 4px 12px rgba(184,92,56,0.15)' }}>
+              End Session
             </button>
           </div>
         </header>
 
-        {/* Inner Content Area */}
         <div style={{ padding: '36px', flexGrow: 1 }}>
+          {/* Notifications Center Banner */}
+          {notifications.filter(n => !n.read).length > 0 && (
+            <div style={{ background: 'rgba(184, 92, 56, 0.04)', border: '1px dashed var(--gold)', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
+              <strong style={{ fontSize: '13px', color: 'var(--gold)' }}>Recent Alerts &amp; Workflow Notifications:</strong>
+              <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', fontSize: '12px', color: '#6E6558' }}>
+                {notifications.filter(n => !n.read).map(n => (
+                  <li key={n._id} style={{ marginBottom: '4px' }}>{n.message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          {/* 1. DASHBOARD VIEW */}
+          {/* 1. DASHBOARD VIEW (Role-Specific widgets display) */}
           {activeTab === 'dashboard' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
               <div>
-                <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#2E2A27', margin: 0, letterSpacing: '0.5px', fontFamily: "'Montserrat', sans-serif" }}>
-                  Administrative Dashboard
+                <h2 style={{ fontSize: '22px', fontWeight: 700, margin: 0, color: 'var(--gold)', fontFamily: "'Montserrat', sans-serif" }}>
+                  Welcome back, {userName}!
                 </h2>
-                <p style={{ fontSize: '13.5px', color: '#6E6558', margin: '4px 0 0 0', fontWeight: 500 }}>
-                  Overview of the Madhya Pradesh Heritage Platform.
+                <p style={{ fontSize: '13px', color: '#6E6558', margin: '4px 0 0 0' }}>
+                  Role Dashboard: <strong style={{ color: 'var(--gold)' }}>{role.replace('_', ' ')}</strong> {userInstitution ? ` - ${userInstitution}` : ''}
                 </p>
               </div>
 
-              {/* Stats Summary Cards */}
+              {/* Grid Widgets mapping to prompt specifications */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '4px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)', transition: 'transform 0.2s', cursor: 'default' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070', letterSpacing: '1px', fontFamily: "'Montserrat', sans-serif" }}>Total Notices</div>
-                  <div style={{ fontSize: '36px', fontWeight: 700, color: '#B85C38', marginTop: '10px', fontFamily: "'Montserrat', sans-serif" }}>{notices.length}</div>
-                </div>
-                <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '4px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)', transition: 'transform 0.2s', cursor: 'default' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070', letterSpacing: '1px', fontFamily: "'Montserrat', sans-serif" }}>Active Staff</div>
-                  <div style={{ fontSize: '36px', fontWeight: 700, color: '#B85C38', marginTop: '10px', fontFamily: "'Montserrat', sans-serif" }}>7 <span style={{ fontSize: '14px', color: '#6E6558' }}>Registered</span></div>
-                </div>
-                <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '4px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)', transition: 'transform 0.2s', cursor: 'default' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070', letterSpacing: '1px', fontFamily: "'Montserrat', sans-serif" }}>Ticket Bookings</div>
-                  <div style={{ fontSize: '36px', fontWeight: 700, color: '#B85C38', marginTop: '10px', fontFamily: "'Montserrat', sans-serif" }}>148 <span style={{ fontSize: '14px', color: '#6E6558' }}>Active</span></div>
-                </div>
-                <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '4px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)', transition: 'transform 0.2s', cursor: 'default' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070', letterSpacing: '1px', fontFamily: "'Montserrat', sans-serif" }}>System Integrity</div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#2e7d32', marginTop: '24px', letterSpacing: '1.2px', textShadow: '0 0 10px rgba(46,125,50,0.08)' }}>SECURE &amp; STABLE</div>
-                </div>
+                {role === 'SYSTEM_ADMIN' && (
+                  <>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Total Users</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--gold)', marginTop: '6px' }}>{widgets.totalUsers || 0}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Total Institutions</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--gold)', marginTop: '6px' }}>{widgets.totalInstitutions || 0}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Active Sessions</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--gold)', marginTop: '6px' }}>{widgets.activeSessions || 0}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>System Health</div>
+                      <div style={{ fontSize: '20px', fontWeight: 700, color: '#10B981', marginTop: '16px' }}>{widgets.systemHealth}</div>
+                    </div>
+                  </>
+                )}
+
+                {role === 'DIRECTORATE_ADMIN' && (
+                  <>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Pending Approvals</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--gold)', marginTop: '6px' }}>{widgets.pendingApprovals || 0}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Visitor Stats (Monthly)</div>
+                      <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--gold)', marginTop: '12px' }}>{widgets.monthlyVisitorStats}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Performance</div>
+                      <div style={{ fontSize: '24px', fontWeight: 700, color: '#10B981', marginTop: '12px' }}>{widgets.institutionPerformance}</div>
+                    </div>
+                  </>
+                )}
+
+                {role === 'DIRECTORATE_OFFICER' && (
+                  <>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Review Requests</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--gold)', marginTop: '6px' }}>{widgets.reviewRequests || 0}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>My Drafts</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: '#6E6558', marginTop: '6px' }}>{widgets.myDrafts || 0}</div>
+                    </div>
+                  </>
+                )}
+
+                {role === 'MUSEUM_ADMIN' && (
+                  <>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Galleries</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--gold)', marginTop: '6px' }}>{widgets.galleriesCount}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Artefacts</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--gold)', marginTop: '6px' }}>{widgets.artefactsCount}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Visitor Insights</div>
+                      <div style={{ fontSize: '18px', fontWeight: 700, color: '#6E6558', marginTop: '16px' }}>{widgets.visitorInsights}</div>
+                    </div>
+                  </>
+                )}
+
+                {role === 'SITE_INCHARGE' && (
+                  <>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Condition Reports</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--gold)', marginTop: '6px' }}>{widgets.conditionReports}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Visitor Stats</div>
+                      <div style={{ fontSize: '20px', fontWeight: 700, color: '#6E6558', marginTop: '16px' }}>{widgets.visitorStatistics}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Maintenance tasks</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: '#EF4444', marginTop: '16px' }}>{widgets.maintenanceTasks}</div>
+                    </div>
+                  </>
+                )}
+
+                {role === 'INSTITUTE_ADMIN' && (
+                  <>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Research Publications</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--gold)', marginTop: '6px' }}>{widgets.researchPublications}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Academic Events</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: '#6E6558', marginTop: '6px' }}>{widgets.eventsCount}</div>
+                    </div>
+                  </>
+                )}
+
+                {role === 'TRUST_ADMIN' && (
+                  <>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>Active Projects</div>
+                      <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--gold)', marginTop: '6px' }}>{widgets.projectsCount}</div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '20px', borderRadius: '6px', position: 'relative', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                      <CornerOrnament style={{ top: 6, right: 6, transform: 'rotate(90deg)' }} />
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8c8070' }}>CSR Funding Status</div>
+                      <div style={{ fontSize: '20px', fontWeight: 700, color: '#10B981', marginTop: '16px' }}>{widgets.fundingStatus}</div>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Split Grid */}
+              {/* Split view: Content status and actions */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '30px', alignItems: 'start' }}>
-                {/* Publish announcement form */}
-                <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '32px', borderRadius: '4px', boxShadow: '0 4px 20px rgba(184,92,56,0.02)' }}>
-                  <h3 style={{ fontSize: '15px', color: '#B85C38', margin: '0 0 20px 0', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '12px', fontFamily: "'Montserrat', sans-serif" }}>
-                    Publish Portal Announcement
+                {/* 1. Quick Info list / Activities */}
+                <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                  <h3 style={{ fontSize: '14px', color: 'var(--gold)', margin: '0 0 16px 0', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '8px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>
+                    Portal Content Workspace ({contentList.length})
                   </h3>
-                  <form onSubmit={handlePublish}>
-                    <div style={{ marginBottom: '18px' }}>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#8c8070', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Category</label>
-                      <select 
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '10px 14px',
-                          border: '1px solid rgba(184, 92, 56, 0.25)',
-                          borderRadius: '2px',
-                          fontSize: '13px',
-                          background: '#FFFFFF',
-                          color: '#2E2A27',
-                          outline: 'none',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <option value="Tender">Tender</option>
-                        <option value="Recruitment">Recruitment</option>
-                        <option value="Circular">Circular</option>
-                        <option value="EOI">EOI</option>
-                        <option value="General Notice">General Notice</option>
-                      </select>
-                    </div>
-
-                    <div style={{ marginBottom: '18px' }}>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#8c8070', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Title / Description</label>
-                      <input 
-                        type="text" 
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="e.g. Museum upgrades works"
-                        required 
-                        style={{
-                          width: '100%',
-                          padding: '10px 14px',
-                          border: '1px solid rgba(184, 92, 56, 0.25)',
-                          borderRadius: '2px',
-                          fontSize: '13px',
-                          background: '#FFFFFF',
-                          color: '#2E2A27',
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ marginBottom: '24px' }}>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#8c8070', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</label>
-                      <input 
-                        type="text" 
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        required 
-                        style={{
-                          width: '100%',
-                          padding: '10px 14px',
-                          border: '1px solid rgba(184, 92, 56, 0.25)',
-                          borderRadius: '2px',
-                          fontSize: '13px',
-                          background: '#FFFFFF',
-                          color: '#2E2A27',
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-
-                    <button 
-                      type="submit" 
-                      disabled={isSubmitting}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: 'linear-gradient(135deg, #B85C38, #8c4125)',
-                        color: '#FFFFFF',
-                        border: 'none',
-                        borderRadius: '2px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        textTransform: 'uppercase',
-                        letterSpacing: '1px',
-                        boxShadow: '0 4px 12px rgba(184, 92, 56, 0.2)',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'none';
-                      }}
-                    >
-                      {isSubmitting ? 'Publishing...' : 'Publish Announcement'}
-                    </button>
-                  </form>
-                </div>
-
-                {/* Quick actions panel */}
-                <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '32px', borderRadius: '4px', boxShadow: '0 4px 20px rgba(184,92,56,0.02)', maxHeight: '500px', overflowY: 'auto' }}>
-                  <h3 style={{ fontSize: '15px', color: '#B85C38', margin: '0 0 20px 0', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '12px', fontFamily: "'Montserrat', sans-serif" }}>
-                    Quick Notice Actions
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {notices.map((n) => (
-                      <div key={n.id || n._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(184, 92, 56, 0.02)', border: '1px solid rgba(184, 92, 56, 0.08)', borderRadius: '4px' }}>
-                        <div style={{ textAlign: 'left', maxWidth: '75%' }}>
-                          <span style={{ fontSize: '9px', color: '#B85C38', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{n.category}</span>
-                          <div style={{ fontSize: '13px', fontWeight: 600, margin: '4px 0', color: '#2E2A27' }}>{n.title}</div>
-                          <span style={{ fontSize: '10px', color: '#8c8070' }}>{n.date}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
+                    {contentList.map(c => (
+                      <div key={c._id} style={{ padding: '12px', background: 'rgba(184, 92, 56, 0.02)', border: '1px solid rgba(184, 92, 56, 0.08)', borderRadius: '6px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: 'var(--gold)' }}>
+                            {c.contentType}
+                          </span>
+                          <span style={{
+                            fontSize: '9px',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '20px',
+                            background: c.status === 'Published' ? '#D1FAE5' : c.status === 'Draft' ? '#F3F4F6' : '#FEF3C7',
+                            color: c.status === 'Published' ? '#065F46' : c.status === 'Draft' ? '#374151' : '#92400E'
+                          }}>
+                            {c.status}
+                          </span>
                         </div>
-                        <button 
-                          onClick={() => handleDelete(n.id, n._id)}
-                          style={{
-                            background: '#FEE2E2',
-                            border: '1px solid #FCA5A5',
-                            color: '#991B1B',
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            padding: '6px 12px',
-                            cursor: 'pointer',
-                            borderRadius: '4px',
-                            transition: 'all 0.15s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#FCA5A5';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = '#FEE2E2';
-                          }}
-                        >
-                          Delete
-                        </button>
+                        <h4 style={{ fontSize: '13px', margin: '6px 0 2px 0', color: '#2E2A27' }}>{c.title}</h4>
+                        <p style={{ fontSize: '11px', color: '#6E6558', margin: '0 0 8px 0' }}>{c.description}</p>
+                        <span style={{ fontSize: '10px', color: '#8c8070' }}>Institution: {c.institution}</span>
                       </div>
                     ))}
                   </div>
                 </div>
+
+                {/* 2. Quick Actions / Interactive features per Role */}
+                {['MUSEUM_ADMIN', 'SITE_INCHARGE', 'INSTITUTE_ADMIN', 'TRUST_ADMIN'].includes(role) && (
+                  <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                    <h3 style={{ fontSize: '14px', color: 'var(--gold)', margin: '0 0 16px 0', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '8px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>
+                      Draft New Entry / Update
+                    </h3>
+                    <form onSubmit={(e) => handleCreateContent(e, false)}>
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#8c8070', marginBottom: '4px' }}>CONTENT TYPE</label>
+                        <select 
+                          value={contentType} 
+                          onChange={(e) => setContentType(e.target.value)}
+                          style={{ width: '100%', padding: '8px', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', background: '#FFFFFF', color: '#2E2A27', outline: 'none' }}
+                        >
+                          {role === 'MUSEUM_ADMIN' && (
+                            <>
+                              <option value="gallery">Gallery Details</option>
+                              <option value="artefact">Artefact Inventory</option>
+                              <option value="announcement">Museum Notice</option>
+                            </>
+                          )}
+                          {role === 'SITE_INCHARGE' && (
+                            <>
+                              <option value="condition_report">Condition Report</option>
+                              <option value="notice">Visitor Notice/Alert</option>
+                            </>
+                          )}
+                          {role === 'INSTITUTE_ADMIN' && (
+                            <>
+                              <option value="publication">Research Publication</option>
+                              <option value="announcement">Academic Event</option>
+                            </>
+                          )}
+                          {role === 'TRUST_ADMIN' && (
+                            <>
+                              <option value="project">Trust Project update</option>
+                              <option value="csr_activity">CSR activity report</option>
+                              <option value="annual_report">Annual Report PDF link</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#8c8070', marginBottom: '4px' }}>TITLE</label>
+                        <input 
+                          type="text" 
+                          value={title} 
+                          onChange={(e) => setTitle(e.target.value)} 
+                          required 
+                          style={{ width: '100%', padding: '8px', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', background: '#FFFFFF', color: '#2E2A27', outline: 'none', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#8c8070', marginBottom: '4px' }}>DESCRIPTION/BODY</label>
+                        <textarea 
+                          value={description} 
+                          onChange={(e) => setDescription(e.target.value)} 
+                          required 
+                          rows="3"
+                          style={{ width: '100%', padding: '8px', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', background: '#FFFFFF', color: '#2E2A27', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: '16px' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#8c8070', marginBottom: '4px' }}>METADATA (JSON format)</label>
+                        <textarea 
+                          value={metaDetails} 
+                          onChange={(e) => setMetaDetails(e.target.value)} 
+                          placeholder='e.g., { "visitorCount": 200 }'
+                          rows="2"
+                          style={{ width: '100%', padding: '8px', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', background: '#FFFFFF', color: '#2E2A27', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button type="submit" disabled={submitting} style={{ flexGrow: 1, padding: '10px', background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)', fontWeight: 700, cursor: 'pointer', borderRadius: '4px' }}>
+                          Save as Draft
+                        </button>
+                        <button type="button" onClick={(e) => handleCreateContent(e, true)} disabled={submitting} style={{ flexGrow: 1, padding: '10px', background: 'linear-gradient(135deg, var(--gold), #9A4B29)', border: 'none', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer', borderRadius: '4px' }}>
+                          Submit for Review
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* 2. CONTENT WORKSPACE VIEW */}
-          {activeTab === 'content' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#2E2A27', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>
-                  Content Workspace
-                </h2>
-                <p style={{ fontSize: '13.5px', color: '#6E6558', margin: '4px 0 0 0' }}>
-                  Manage site pages, announcements, resources, and catalogued artifacts.
-                </p>
+          {/* 2. WORKSPACE TAB */}
+          {activeTab === 'workspace' && (
+            <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+              <h3 style={{ fontSize: '16px', color: 'var(--gold)', margin: '0 0 16px 0', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '8px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>
+                Direct Workspace Items
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {contentList.map(c => (
+                  <div key={c._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(184, 92, 56, 0.02)', border: '1px solid rgba(184, 92, 56, 0.08)', borderRadius: '6px' }}>
+                    <div style={{ textAlign: 'left' }}>
+                      <span style={{ fontSize: '9px', textTransform: 'uppercase', fontWeight: 700, color: 'var(--gold)' }}>{c.contentType} ({c.status})</span>
+                      <h4 style={{ fontSize: '14px', margin: '4px 0', color: '#2E2A27' }}>{c.title}</h4>
+                      <p style={{ fontSize: '12px', color: '#6E6558', margin: '0' }}>{c.description}</p>
+                      {c.comments && (
+                        <div style={{ fontSize: '11px', color: '#92400E', marginTop: '6px', background: '#FEF3C7', padding: '6px 10px', borderRadius: '4px' }}>
+                          Editorial Comment: "{c.comments}"
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {['Draft', 'Rejected'].includes(c.status) && (
+                        <button 
+                          onClick={() => handleWorkflowTransition(c._id, 'recommend')} // Simulates resubmitting to reviews
+                          style={{ padding: '6px 12px', background: 'var(--gold)', border: 'none', color: '#FFFFFF', fontSize: '11px', cursor: 'pointer', fontWeight: 700, borderRadius: '4px' }}
+                        >
+                          Submit
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleDeleteContent(c._id)}
+                        style={{ padding: '6px 12px', background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#991B1B', fontSize: '11px', cursor: 'pointer', fontWeight: 700, borderRadius: '4px' }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 3. APPROVALS WORKFLOW TAB */}
+          {activeTab === 'approvals' && (
+            <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+              <h3 style={{ fontSize: '16px', color: 'var(--gold)', margin: '0 0 20px 0', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '8px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>
+                Editorial Approvals &amp; Workflows
+              </h3>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#8c8070', marginBottom: '6px' }}>EDITORIAL / REVISION FEEDBACK COMMENT</label>
+                <input 
+                  type="text" 
+                  value={editorialComment}
+                  onChange={(e) => setEditorialComment(e.target.value)}
+                  placeholder="Provide approval comment or rejection reason..."
+                  style={{ width: '100%', padding: '10px', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', background: '#FFFFFF', color: '#2E2A27', outline: 'none', boxSizing: 'border-box' }}
+                />
               </div>
 
-              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '32px', borderRadius: '4px', boxShadow: '0 4px 20px rgba(184,92,56,0.02)' }}>
-                <div style={{ fontSize: '15px', fontWeight: 700, color: '#B85C38', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '12px', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: "'Montserrat', sans-serif" }}>
-                  Active Notices &amp; Announcements ({notices.length})
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {notices.map((notice) => (
-                    <div 
-                      key={notice._id || notice.id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '16px 20px',
-                        background: 'rgba(184, 92, 56, 0.02)',
-                        border: '1px solid rgba(184, 92, 56, 0.08)',
-                        borderRadius: '4px'
-                      }}
-                    >
-                      <div style={{ textAlign: 'left', maxWidth: '75%' }}>
-                        <span style={{ fontSize: '9px', textTransform: 'uppercase', color: '#B85C38', fontWeight: 700, letterSpacing: '0.5px' }}>{notice.category}</span>
-                        <p style={{ fontSize: '14px', fontWeight: 600, margin: '4px 0', color: '#2E2A27' }}>{notice.title}</p>
-                        <span style={{ fontSize: '10.5px', color: '#8c8070' }}>Published Date: {notice.date}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {contentList.filter(c => c.status !== 'Draft' && c.status !== 'Published').map(c => (
+                  <div key={c._id} style={{ border: '1px solid rgba(184, 92, 56, 0.12)', padding: '16px', borderRadius: '6px', background: 'rgba(184, 92, 56, 0.01)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: 'var(--gold)' }}>{c.institution}</span>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#92400E', background: '#FEF3C7', padding: '3px 8px', borderRadius: '20px' }}>{c.status}</span>
+                    </div>
+                    <h4 style={{ fontSize: '14px', margin: '0 0 4px 0', color: '#2E2A27' }}>{c.title}</h4>
+                    <p style={{ fontSize: '12px', color: '#6E6558', margin: '0 0 12px 0' }}>{c.description}</p>
+                    
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      {role === 'DIRECTORATE_OFFICER' && c.status === 'Submitted' && (
+                        <button onClick={() => handleWorkflowTransition(c._id, 'review')} style={{ padding: '6px 12px', background: '#3B82F6', border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '11px', borderRadius: '4px' }}>
+                          Start Review
+                        </button>
+                      )}
+                      {role === 'DIRECTORATE_OFFICER' && c.status === 'Under Review' && (
+                        <button onClick={() => handleWorkflowTransition(c._id, 'recommend')} style={{ padding: '6px 12px', background: '#10B981', border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '11px', borderRadius: '4px' }}>
+                          Recommend Approval
+                        </button>
+                      )}
+                      {(role === 'DIRECTORATE_ADMIN' || role === 'SYSTEM_ADMIN') && c.status === 'Approved' && (
+                        <button onClick={() => handleWorkflowTransition(c._id, 'publish')} style={{ padding: '6px 12px', background: '#10B981', border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '11px', borderRadius: '4px' }}>
+                          Approve &amp; Publish
+                        </button>
+                      )}
+                      {['DIRECTORATE_OFFICER', 'DIRECTORATE_ADMIN', 'SYSTEM_ADMIN'].includes(role) && (
+                        <button onClick={() => handleWorkflowTransition(c._id, 'reject')} style={{ padding: '6px 12px', background: '#EF4444', border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '11px', borderRadius: '4px' }}>
+                          Reject &amp; Resubmit
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. SUPER ADMIN ONLY: USERS TAB */}
+          {activeTab === 'users' && role === 'SYSTEM_ADMIN' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                <h3 style={{ fontSize: '15px', color: 'var(--gold)', margin: '0 0 16px 0', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '8px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>
+                  Create New Staff User
+                </h3>
+                <form onSubmit={handleCreateUser} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#8c8070', marginBottom: '4px' }}>FULL NAME</label>
+                    <input type="text" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', background: '#FFFFFF', color: '#2E2A27', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#8c8070', marginBottom: '4px' }}>EMAIL</label>
+                    <input type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', background: '#FFFFFF', color: '#2E2A27', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#8c8070', marginBottom: '4px' }}>PASSWORD</label>
+                    <input type="password" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', background: '#FFFFFF', color: '#2E2A27', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#8c8070', marginBottom: '4px' }}>ROLE ASSIGNMENT</label>
+                    <select value={newUserRole} onChange={(e) => setNewUserRole(e.target.value)} style={{ width: '100%', padding: '8px', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', background: '#FFFFFF', color: '#2E2A27', outline: 'none' }}>
+                      <option value="SYSTEM_ADMIN">Super Admin (SYSTEM_ADMIN)</option>
+                      <option value="DIRECTORATE_ADMIN">Directorate Admin</option>
+                      <option value="DIRECTORATE_OFFICER">Directorate Officer</option>
+                      <option value="MUSEUM_ADMIN">Museum Admin</option>
+                      <option value="SITE_INCHARGE">Site Incharge</option>
+                      <option value="INSTITUTE_ADMIN">Institute Admin</option>
+                      <option value="TRUST_ADMIN">Trust Admin</option>
+                    </select>
+                  </div>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#8c8070', marginBottom: '4px' }}>INSTITUTION ASSIGNMENT (If Institution Role)</label>
+                    <input type="text" value={newUserInstitution} onChange={(e) => setNewUserInstitution(e.target.value)} placeholder="e.g. State Museum, Bhopal" style={{ width: '100%', padding: '8px', border: '1px solid rgba(184, 92, 56, 0.25)', borderRadius: '4px', background: '#FFFFFF', color: '#2E2A27', outline: 'none' }} />
+                  </div>
+                  <button type="submit" style={{ gridColumn: 'span 2', padding: '10px', background: 'linear-gradient(135deg, var(--gold), #9A4B29)', border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', borderRadius: '4px' }}>
+                    Create &amp; Authorise User
+                  </button>
+                </form>
+              </div>
+
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                <h3 style={{ fontSize: '15px', color: 'var(--gold)', margin: '0 0 16px 0', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '8px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>
+                  Active Platform Users ({usersList.length})
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {usersList.map(u => (
+                    <div key={u._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(184, 92, 56, 0.02)', border: '1px solid rgba(184, 92, 56, 0.08)', borderRadius: '6px' }}>
+                      <div>
+                        <strong style={{ color: '#2E2A27' }}>{u.name}</strong> ({u.role})
+                        <div style={{ fontSize: '11px', color: '#6E6558' }}>Email: {u.email} | Institution: {u.institution || 'Global Access'}</div>
                       </div>
-                      <button 
-                        onClick={() => handleDelete(notice.id, notice._id)} 
-                        style={{
-                          background: '#FEE2E2',
-                          border: '1px solid #FCA5A5',
-                          color: '#991B1B',
-                          fontSize: '11px',
-                          padding: '8px 14px',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#FCA5A5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = '#FEE2E2';
-                        }}
-                      >
-                        Delete Announcement
+                      <button onClick={() => handleDeleteUser(u._id)} style={{ padding: '6px 12px', background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#991B1B', fontSize: '11px', cursor: 'pointer', fontWeight: 700, borderRadius: '4px' }}>
+                        Revoke Access
                       </button>
                     </div>
                   ))}
@@ -797,314 +900,138 @@ export default function AdminDashboard({ notices, onClose, onNoticeUpdate, onLog
             </div>
           )}
 
-          {/* 3. APPROVALS VIEW */}
-          {activeTab === 'approvals' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#2E2A27', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>
-                  Pending Approvals
-                </h2>
-                <p style={{ fontSize: '13.5px', color: '#6E6558', margin: '4px 0 0 0' }}>
-                  Review and authorize portal edits and visitor e-ticket booking confirmations.
-                </p>
-              </div>
-
-              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '4px', boxShadow: '0 4px 20px rgba(184,92,56,0.02)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid rgba(184, 92, 56, 0.2)', color: '#B85C38', fontWeight: 700 }}>
-                      <th style={{ padding: '14px' }}>Request ID</th>
-                      <th style={{ padding: '14px' }}>Type</th>
-                      <th style={{ padding: '14px' }}>Details</th>
-                      <th style={{ padding: '14px' }}>Requested By</th>
-                      <th style={{ padding: '14px' }}>Status</th>
-                      <th style={{ padding: '14px', textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ borderBottom: '1px solid rgba(184, 92, 56, 0.08)' }}>
-                      <td style={{ padding: '14px', fontWeight: 700, color: '#2E2A27' }}>#ET-89481</td>
-                      <td style={{ padding: '14px' }}>e-Ticket Booking Approval</td>
-                      <td style={{ padding: '14px', color: '#6E6558' }}>5 Adults ticket booking for Bhimbetka Rock Shelters</td>
-                      <td style={{ padding: '14px', fontFamily: 'monospace', color: '#8c8070' }}>web-gate@mp.gov.in</td>
-                      <td style={{ padding: '14px' }}><span style={{ color: '#D97706', background: 'rgba(217,119,6,0.1)', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 700 }}>PENDING GATEWAY</span></td>
-                      <td style={{ padding: '14px', textAlign: 'right' }}>
-                        <button onClick={() => alert('Booking Approved')} style={{ background: '#2e7d32', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', marginRight: '6px', fontSize: '11px', fontWeight: 600 }}>Approve</button>
-                        <button onClick={() => alert('Booking Rejected')} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>Reject</button>
-                      </td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid rgba(184, 92, 56, 0.08)' }}>
-                      <td style={{ padding: '14px', fontWeight: 700, color: '#2E2A27' }}>#ET-89480</td>
-                      <td style={{ padding: '14px' }}>e-Ticket Booking Approval</td>
-                      <td style={{ padding: '14px', color: '#6E6558' }}>2 Adults, 1 Child ticket booking for Bhopal Museum</td>
-                      <td style={{ padding: '14px', fontFamily: 'monospace', color: '#8c8070' }}>web-gate@mp.gov.in</td>
-                      <td style={{ padding: '14px' }}><span style={{ color: '#D97706', background: 'rgba(217,119,6,0.1)', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 700 }}>PENDING GATEWAY</span></td>
-                      <td style={{ padding: '14px', textAlign: 'right' }}>
-                        <button onClick={() => alert('Booking Approved')} style={{ background: '#2e7d32', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', marginRight: '6px', fontSize: '11px', fontWeight: 600 }}>Approve</button>
-                        <button onClick={() => alert('Booking Rejected')} style={{ background: '#d32f2f', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>Reject</button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+          {/* 5. FEATURE FLAGS TAB */}
+          {activeTab === 'flags' && role === 'SYSTEM_ADMIN' && (
+            <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+              <h3 style={{ fontSize: '15px', color: 'var(--gold)', margin: '0 0 16px 0', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '8px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>
+                Feature Toggle Center
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {featureFlags.map(f => (
+                  <div key={f._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(184, 92, 56, 0.02)', border: '1px solid rgba(184, 92, 56, 0.08)', borderRadius: '6px' }}>
+                    <div>
+                      <strong style={{ color: '#2E2A27' }}>{f.key}</strong>
+                      <div style={{ fontSize: '12px', color: '#6E6558' }}>{f.description}</div>
+                    </div>
+                    <button 
+                      onClick={() => handleToggleFlag(f.key, !f.enabled)}
+                      style={{
+                        padding: '8px 16px',
+                        background: f.enabled ? '#D1FAE5' : '#FEE2E2',
+                        border: f.enabled ? '1px solid #10B981' : '1px solid #EF4444',
+                        color: f.enabled ? '#065F46' : '#991B1B',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {f.enabled ? 'ENABLED' : 'DISABLED'}
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* 4. USERS VIEW */}
-          {activeTab === 'users' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#2E2A27', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>
-                  User Management
-                </h2>
-                <p style={{ fontSize: '13.5px', color: '#6E6558', margin: '4px 0 0 0' }}>
-                  Create, suspend and assign authorization groups to staff users.
-                </p>
+          {/* 6. AUDIT LOGS TAB */}
+          {activeTab === 'audit' && role === 'SYSTEM_ADMIN' && (
+            <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+              <h3 style={{ fontSize: '15px', color: 'var(--gold)', margin: '0 0 16px 0', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '8px', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>
+                Full System Security Audit Trail (Last 100 Actions)
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '500px', overflowY: 'auto' }}>
+                {auditLogs.map((log) => (
+                  <div key={log._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(184, 92, 56, 0.01)', borderBottom: '1px solid rgba(184, 92, 56, 0.08)', fontSize: '12px' }}>
+                    <div style={{ textAlign: 'left' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--gold)' }}>[{log.role}] {log.user}</span>
+                      <div style={{ color: '#2E2A27', marginTop: '3px' }}>Action: {log.action} {log.target ? `on "${log.target}"` : ''}</div>
+                    </div>
+                    <span style={{ fontSize: '10px', color: '#8c8070' }}>{new Date(log.timestamp).toLocaleString()}</span>
+                  </div>
+                ))}
               </div>
+            </div>
+          )}
 
-              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '32px', borderRadius: '4px', boxShadow: '0 4px 20px rgba(184,92,56,0.02)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(184, 92, 56, 0.12)', paddingBottom: '12px', marginBottom: '20px' }}>
-                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#B85C38', textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: "'Montserrat', sans-serif" }}>Active User Database ({SEEDED_ROLES.length})</span>
-                  <button onClick={() => alert('Create user form')} style={{ background: 'linear-gradient(135deg, #B85C38, #8c4125)', color: '#FFFFFF', border: 'none', padding: '8px 16px', borderRadius: '2px', cursor: 'pointer', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: "'Montserrat', sans-serif" }}>+ Add New User</button>
+          {/* INSTITUTION SPECIFIC DETAILED WORKSPACES (Advanced Features Showcase) */}
+          {activeTab === 'museum' && role === 'MUSEUM_ADMIN' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+              {/* QR Code Generator */}
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                <h3 style={{ fontSize: '15px', color: 'var(--gold)', margin: '0 0 12px 0', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>Artefact QR Code Label Generator</h3>
+                <p style={{ fontSize: '12px', color: '#6E6558', marginBottom: '16px' }}>Generate printable labels with QR codes for visitor guidance displays.</p>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div style={{ border: '2px solid var(--gold)', padding: '10px', background: 'white' }}>
+                    {/* Simulated QR Code */}
+                    <div style={{ width: '80px', height: '80px', background: `repeating-conic-gradient(from 45deg, #111 0% 25%, #fff 0% 50%) 50% / 10px 10px` }}></div>
+                  </div>
+                  <div>
+                    <strong style={{ fontSize: '13px', color: '#2E2A27' }}>Bhopal State Museum Exhibit #M-882</strong>
+                    <div style={{ fontSize: '11px', color: '#6E6558', marginTop: '2px' }}>Description: 11th Century Parmara Dynasty Ganesha sculpture.</div>
+                    <button onClick={() => alert('Sending label to Bhopal Museum printer...')} style={{ marginTop: '10px', padding: '6px 12px', background: 'var(--gold)', border: 'none', color: 'white', fontSize: '11px', fontWeight: 700, cursor: 'pointer', borderRadius: '4px' }}>Print Label</button>
+                  </div>
                 </div>
+              </div>
+            </div>
+          )}
 
+          {activeTab === 'site' && role === 'SITE_INCHARGE' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+              {/* GIS Map integration */}
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                <h3 style={{ fontSize: '15px', color: 'var(--gold)', margin: '0 0 12px 0', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>Bhimbetka GIS Rock Shelters Map</h3>
+                <p style={{ fontSize: '12px', color: '#6E6558', marginBottom: '16px' }}>Interactive geo-coordinates map overlay for structural erosion tracking.</p>
+                <div style={{ height: '240px', background: '#F3F4F6', border: '1px solid rgba(184, 92, 56, 0.12)', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
+                  {/* Simulated map graphic */}
+                  <div style={{ position: 'absolute', top: '50px', left: '120px', width: '12px', height: '12px', borderRadius: '50%', background: '#EF4444' }}></div>
+                  <div style={{ position: 'absolute', top: '100px', left: '160px', width: '12px', height: '12px', borderRadius: '50%', background: '#10B981' }}></div>
+                  <div style={{ position: 'absolute', top: '180px', left: '80px', width: '12px', height: '12px', borderRadius: '50%', background: '#10B981' }}></div>
+                  <div style={{ position: 'absolute', bottom: '10px', left: '10px', background: 'white', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '6px', fontSize: '10px', borderRadius: '4px', color: '#2E2A27', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                    🔴 Shelter 4: Active erosion alert
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'institute' && role === 'INSTITUTE_ADMIN' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                <h3 style={{ fontSize: '15px', color: 'var(--gold)', margin: '0 0 12px 0', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>Scholar Profiles &amp; Citations</h3>
+                <p style={{ fontSize: '12px', color: '#6E6558', marginBottom: '16px' }}>Academic research registration database matching international heritage indexing.</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {SEEDED_ROLES.map((role) => (
-                    <div 
-                      key={role.email}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '14px 18px',
-                        background: 'rgba(184, 92, 56, 0.02)',
-                        border: '1px solid rgba(184, 92, 56, 0.08)',
-                        borderRadius: '4px'
-                      }}
-                    >
-                      <div>
-                        <strong style={{ fontSize: '14px', color: '#2E2A27' }}>{role.name}</strong>
-                        <div style={{ fontSize: '11px', color: '#8c8070', marginTop: '3px', fontFamily: 'monospace' }}>{role.email}</div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontSize: '9px', background: 'rgba(46,125,50,0.1)', color: '#2e7d32', padding: '3px 10px', borderRadius: '100px', fontWeight: 700, letterSpacing: '0.5px' }}>
-                          ACTIVE
-                        </span>
-                        <button 
-                          onClick={() => alert(`Modify permissions for: ${role.name}`)}
-                          style={{
-                            background: 'transparent',
-                            border: '1px solid rgba(184, 92, 56, 0.25)',
-                            fontSize: '11px',
-                            color: '#B85C38',
-                            padding: '6px 12px',
-                            borderRadius: '2px',
-                            cursor: 'pointer',
-                            fontWeight: '700',
-                            fontFamily: "'Montserrat', sans-serif",
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(184, 92, 56, 0.05)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          Modify Permissions
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 5. ROLES & PERMISSIONS VIEW */}
-          {activeTab === 'roles' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#2E2A27', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>
-                  Roles &amp; Permissions capability matrix
-                </h2>
-                <p style={{ fontSize: '13.5px', color: '#6E6558', margin: '4px 0 0 0' }}>
-                  The capability matrix that gates the whole platform.
-                </p>
-              </div>
-
-              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '4px', boxShadow: '0 4px 20px rgba(184,92,56,0.02)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12.5px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid rgba(184, 92, 56, 0.2)', color: '#B85C38', fontWeight: 700 }}>
-                      <th style={{ padding: '14px' }}>Role Group</th>
-                      <th style={{ padding: '14px' }}>Publish Notices</th>
-                      <th style={{ padding: '14px' }}>Modify Tickets</th>
-                      <th style={{ padding: '14px' }}>Database Access</th>
-                      <th style={{ padding: '14px' }}>Admin Console</th>
-                      <th style={{ padding: '14px' }}>Feature Toggles</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ borderBottom: '1px solid rgba(184, 92, 56, 0.08)' }}>
-                      <td style={{ padding: '14px', fontWeight: 700, color: '#2E2A27' }}>System Administrator</td>
-                      <td style={{ padding: '14px', color: '#2e7d32', fontWeight: 700 }}>✓ Granted</td>
-                      <td style={{ padding: '14px', color: '#2e7d32', fontWeight: 700 }}>✓ Granted</td>
-                      <td style={{ padding: '14px', color: '#2e7d32', fontWeight: 700 }}>✓ Granted</td>
-                      <td style={{ padding: '14px', color: '#2e7d32', fontWeight: 700 }}>✓ Granted</td>
-                      <td style={{ padding: '14px', color: '#2e7d32', fontWeight: 700 }}>✓ Granted</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid rgba(184, 92, 56, 0.08)' }}>
-                      <td style={{ padding: '14px', fontWeight: 700, color: '#2E2A27' }}>Directorate Admin</td>
-                      <td style={{ padding: '14px', color: '#2e7d32', fontWeight: 700 }}>✓ Granted</td>
-                      <td style={{ padding: '14px', color: '#2e7d32', fontWeight: 700 }}>✓ Granted</td>
-                      <td style={{ padding: '14px', color: '#d32f2f' }}>✗ Restricted</td>
-                      <td style={{ padding: '14px', color: '#2e7d32', fontWeight: 700 }}>✓ Granted</td>
-                      <td style={{ padding: '14px', color: '#d32f2f' }}>✗ Restricted</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid rgba(184, 92, 56, 0.08)' }}>
-                      <td style={{ padding: '14px', fontWeight: 700, color: '#2E2A27' }}>Museum / Site Admin</td>
-                      <td style={{ padding: '14px', color: '#2e7d32', fontWeight: 700 }}>✓ Granted</td>
-                      <td style={{ padding: '14px', color: '#d32f2f' }}>✗ Restricted</td>
-                      <td style={{ padding: '14px', color: '#d32f2f' }}>✗ Restricted</td>
-                      <td style={{ padding: '14px', color: '#2e7d32', fontWeight: 700 }}>✓ Granted</td>
-                      <td style={{ padding: '14px', color: '#d32f2f' }}>✗ Restricted</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* 6. FEATURE FLAGS VIEW */}
-          {activeTab === 'flags' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#2E2A27', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>
-                  Feature flags
-                </h2>
-                <p style={{ fontSize: '13.5px', color: '#6E6558', margin: '4px 0 0 0' }}>
-                  Runtime governance &amp; phase toggles.
-                </p>
-              </div>
-
-              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '32px', borderRadius: '4px', boxShadow: '0 4px 20px rgba(184,92,56,0.02)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', background: 'rgba(184, 92, 56, 0.02)', border: '1px solid rgba(184, 92, 56, 0.08)', borderRadius: '4px' }}>
-                    <div>
-                      <strong style={{ fontSize: '14.5px', color: '#2E2A27' }}>e-Ticket Booking Gateway</strong>
-                      <p style={{ fontSize: '12px', color: '#6E6558', margin: '4px 0 0 0' }}>Enables live ticketing and seat selection on monument detail views.</p>
-                    </div>
-                    <button 
-                      onClick={() => toggleFlag('eTicketBooking')} 
-                      style={{
-                        background: flags.eTicketBooking ? 'rgba(46,125,50,0.1)' : 'rgba(211,47,47,0.1)',
-                        border: flags.eTicketBooking ? '1px solid rgba(46,125,50,0.3)' : '1px solid rgba(211,47,47,0.3)',
-                        color: flags.eTicketBooking ? '#2e7d32' : '#d32f2f',
-                        padding: '8px 18px',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        borderRadius: '2px',
-                        cursor: 'pointer',
-                        letterSpacing: '0.8px',
-                        fontFamily: "'Montserrat', sans-serif",
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {flags.eTicketBooking ? 'ENABLED' : 'DISABLED'}
-                    </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderBottom: '1px solid rgba(184, 92, 56, 0.08)', color: '#2E2A27' }}>
+                    <span>Dr. Ramesh K. Sharma (Paleolithic Tools Specialist)</span>
+                    <strong style={{ color: 'var(--gold)' }}>148 Citations</strong>
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', background: 'rgba(184, 92, 56, 0.02)', border: '1px solid rgba(184, 92, 56, 0.08)', borderRadius: '4px' }}>
-                    <div>
-                      <strong style={{ fontSize: '14.5px', color: '#2E2A27' }}>Museum Audio Guide Streaming</strong>
-                      <p style={{ fontSize: '12px', color: '#6E6558', margin: '4px 0 0 0' }}>Enable voice guide playbacks inside museum sub-panels.</p>
-                    </div>
-                    <button 
-                      onClick={() => toggleFlag('museumAudioGuide')} 
-                      style={{
-                        background: flags.museumAudioGuide ? 'rgba(46,125,50,0.1)' : 'rgba(211,47,47,0.1)',
-                        border: flags.museumAudioGuide ? '1px solid rgba(46,125,50,0.3)' : '1px solid rgba(211,47,47,0.3)',
-                        color: flags.museumAudioGuide ? '#2e7d32' : '#d32f2f',
-                        padding: '8px 18px',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        borderRadius: '2px',
-                        cursor: 'pointer',
-                        letterSpacing: '0.8px',
-                        fontFamily: "'Montserrat', sans-serif",
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {flags.museumAudioGuide ? 'ENABLED' : 'DISABLED'}
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', background: 'rgba(184, 92, 56, 0.02)', border: '1px solid rgba(184, 92, 56, 0.08)', borderRadius: '4px' }}>
-                    <div>
-                      <strong style={{ fontSize: '14.5px', color: '#2E2A27' }}>Virtual 3D Tour Rendering</strong>
-                      <p style={{ fontSize: '12px', color: '#6E6558', margin: '4px 0 0 0' }}>Enables WebGL-based virtual interactive tours of historical sites.</p>
-                    </div>
-                    <button 
-                      onClick={() => toggleFlag('virtualTour3D')} 
-                      style={{
-                        background: flags.virtualTour3D ? 'rgba(46,125,50,0.1)' : 'rgba(211,47,47,0.1)',
-                        border: flags.virtualTour3D ? '1px solid rgba(46,125,50,0.3)' : '1px solid rgba(211,47,47,0.3)',
-                        color: flags.virtualTour3D ? '#2e7d32' : '#d32f2f',
-                        padding: '8px 18px',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        borderRadius: '2px',
-                        cursor: 'pointer',
-                        letterSpacing: '0.8px',
-                        fontFamily: "'Montserrat', sans-serif",
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {flags.virtualTour3D ? 'ENABLED' : 'DISABLED'}
-                    </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderBottom: '1px solid rgba(184, 92, 56, 0.08)', color: '#2E2A27' }}>
+                    <span>Prof. Anand Verma (Bhimbetka Cave Art Restoration)</span>
+                    <strong style={{ color: 'var(--gold)' }}>92 Citations</strong>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* 7. AUDIT LOG VIEW */}
-          {activeTab === 'audit' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#2E2A27', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>
-                  Security and activity audit trail
-                </h2>
-                <p style={{ fontSize: '13.5px', color: '#6E6558', margin: '4px 0 0 0' }}>
-                  Security and activity audit trail of active administrative database sessions.
-                </p>
-              </div>
-
-              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '4px', boxShadow: '0 4px 20px rgba(184,92,56,0.02)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12.5px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid rgba(184, 92, 56, 0.2)', color: '#B85C38', fontWeight: 700 }}>
-                      <th style={{ padding: '14px' }}>Timestamp</th>
-                      <th style={{ padding: '14px' }}>Initiated By</th>
-                      <th style={{ padding: '14px' }}>Action Log</th>
-                      <th style={{ padding: '14px' }}>Target Resource</th>
-                      <th style={{ padding: '14px', textAlign: 'right' }}>Security Tier</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {auditLogs.map((log, index) => (
-                      <tr key={index} style={{ borderBottom: '1px solid rgba(184, 92, 56, 0.08)' }}>
-                        <td style={{ padding: '14px', fontFamily: 'monospace', color: '#B85C38', fontWeight: 600 }}>{log.time}</td>
-                        <td style={{ padding: '14px', fontWeight: 700, color: '#2E2A27' }}>{log.user}</td>
-                        <td style={{ padding: '14px', color: '#6E6558' }}>{log.action}</td>
-                        <td style={{ padding: '14px', fontStyle: 'italic', color: '#8c8070' }}>{log.target}</td>
-                        <td style={{ padding: '14px', textAlign: 'right', color: '#2e7d32', fontWeight: 700, letterSpacing: '0.5px' }}>LEVEL 1 SECURITY</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {activeTab === 'trust' && role === 'TRUST_ADMIN' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid rgba(184, 92, 56, 0.15)', padding: '24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(184,92,56,0.02)' }}>
+                <h3 style={{ fontSize: '15px', color: 'var(--gold)', margin: '0 0 12px 0', fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>Corporate CSR Partnerships &amp; Grants</h3>
+                <p style={{ fontSize: '12px', color: '#6E6558', marginBottom: '16px' }}>Project funding oversight dashboard for archaeological restoration.</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ border: '1px solid rgba(184, 92, 56, 0.12)', padding: '12px', borderRadius: '6px', background: '#FCFAF7' }}>
+                    <strong style={{ color: '#2E2A27' }}>National Coal Corp CSR</strong>
+                    <div style={{ fontSize: '12px', color: '#10B981', fontWeight: 700, marginTop: '4px' }}>₹1.8 Cr allocated (Bagh Caves site)</div>
+                  </div>
+                  <div style={{ border: '1px solid rgba(184, 92, 56, 0.12)', padding: '12px', borderRadius: '6px', background: '#FCFAF7' }}>
+                    <strong style={{ color: '#2E2A27' }}>MP Tourism Dev Corp</strong>
+                    <div style={{ fontSize: '12px', color: '#10B981', fontWeight: 700, marginTop: '4px' }}>₹2.4 Cr allocated (Infrastructure development)</div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
-
         </div>
       </main>
     </div>
