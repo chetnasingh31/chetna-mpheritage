@@ -33,9 +33,9 @@ export default function ExplorePage({ onViewChange, onOpenDetails, onBookClick }
           <img src="/gwalior_fort.png" alt="Gwalior Fort Madhya Pradesh Heritage" />
           <div className="explore-hero-overlay"></div>
         </div>
-        
+
         <div className="explore-hero-content">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -47,7 +47,7 @@ export default function ExplorePage({ onViewChange, onOpenDetails, onBookClick }
               Living Legacy
             </h1>
             <p className="explore-hero-desc">
-              Embark on an immersive journey across millennia. Unearth ancient prehistoric art, 
+              Embark on an immersive journey across millennia. Unearth ancient prehistoric art,
               sacred monuments, and royal fort cities that speak of glory, devotion, and timeless art.
             </p>
             <div className="explore-hero-actions">
@@ -78,7 +78,7 @@ export default function ExplorePage({ onViewChange, onOpenDetails, onBookClick }
             { id: 'galleries', title: 'Galleries', desc: 'Curated physical and virtual exhibitions of ancient artifacts.', icon: <Image size={24} />, image: '/khajuraho.png', view: 'home' },
             { id: 'events', title: 'Events & News', desc: 'Heritage walks, training workshops, and exhibition openings.', icon: <Calendar size={24} />, image: '/mandu.png', view: 'home' }
           ].map((cat) => (
-            <motion.div 
+            <motion.div
               key={cat.id}
               className="glow-card"
               whileHover={{ y: -8 }}
@@ -147,12 +147,12 @@ export default function ExplorePage({ onViewChange, onOpenDetails, onBookClick }
                   <img src={FEATURED_HIGHLIGHTS[activeSlide].img} alt={FEATURED_HIGHLIGHTS[activeSlide].title} />
                   <div className="slide-image-overlay"></div>
                 </div>
-                
+
                 <div className="slide-text-container">
                   <span className="slide-tag">{FEATURED_HIGHLIGHTS[activeSlide].tag}</span>
                   <h3 className="slide-title">{FEATURED_HIGHLIGHTS[activeSlide].title}</h3>
                   <p className="slide-desc">{FEATURED_HIGHLIGHTS[activeSlide].desc}</p>
-                  
+
                   <div className="slide-meta">
                     <div className="slide-meta-item">
                       <strong>Region:</strong> {FEATURED_HIGHLIGHTS[activeSlide].region}
